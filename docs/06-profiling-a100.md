@@ -11,7 +11,7 @@ make run
 ## Nsight Compute
 
 ```bash
-ncu --set basic --kernel-name vector_add ./build/01_vector_add
+ncu --set basic --kernel-name vector_add ./build/06_vector_add
 ```
 
 או:
@@ -40,8 +40,8 @@ Occupancy גבוה אינו מטרה בפני עצמה. kernel יכול להיו
 ## כלי תקינות
 
 ```bash
-compute-sanitizer ./build/01_vector_add
-compute-sanitizer ./build/04_tiled_matmul
+compute-sanitizer ./build/06_vector_add
+compute-sanitizer ./build/09_tiled_matmul
 ```
 
 הכלי איטי יותר מהרצה רגילה, אך שימושי למציאת גישות זיכרון שגויות.

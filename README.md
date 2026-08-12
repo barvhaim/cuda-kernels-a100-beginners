@@ -1,113 +1,155 @@
 # CUDA Kernels למתחילים על NVIDIA A100
 
-קורס מעשי וקצר שמלמד כתיבת CUDA kernels מהאינדקס הראשון ועד shared memory וכפל מטריצות.
+קורס מעשי בעברית שמתחיל מ-kernel יחיד ו-thread יחיד, ומתקדם עד building blocks של LLMs כמו embeddings, ‏residual connections, ‏RMSNorm, ‏attention softmax ו-linear projections.
 
-## מה בונים
+## למי הקורס מיועד?
 
-בסוף המסלול תוכלו:
+לא צריך ניסיון קודם ב-CUDA. כן כדאי להכיר:
 
-- להסביר `grid`, `block`, `thread` ו-`warp`.
-- לחשב אינדקס גלובלי בלי להתבלבל בין אינדקס למיקום אנושי.
-- להקצות ולהעתיק זיכרון בין host ל-device.
-- לכתוב kernel עם בדיקת גבולות ו-grid-stride loop.
-- להשתמש ב-`shared memory` וב-`__syncthreads()`.
-- למדוד זמן GPU ולבצע profiling בסיסי ב-Nsight Compute.
-- להבין מה עדיין חסר בדרך ל-kernels מהירים של LLMs.
+- משתנים, לולאות, פונקציות ומערכים
+- C או C++ ברמה בסיסית
+- הרצת פקודות ב-Linux terminal
+
+## מה תלמדו?
+
+בסיום תוכלו:
+
+- להסביר מהו kernel ומה עושים `<<<blocks, threads>>>`.
+- לחשב `threadIdx`, ‏`blockIdx` ואינדקס גלובלי, החל מ-0.
+- להבין למה צריך bounds check.
+- להעביר נתונים בין CPU ל-GPU.
+- לכתוב vector addition ו-grid-stride loop.
+- להבין shared memory, ‏synchronization ו-reduction.
+- למפות CUDA primitives ל-embedding, ‏residual, ‏RMSNorm, ‏softmax ו-projections בתוך LLM.
+- למדוד kernel באמצעות CUDA events ו-Nsight Compute.
 
 ## דרישות
 
-- כרטיס NVIDIA A100 עם driver תקין.
+- NVIDIA A100 עם driver תקין.
 - CUDA Toolkit הכולל `nvcc`.
 - CMake 3.24 ומעלה.
 - Linux ו-compiler התומך ב-C++17.
-- אין צורך ב-Python packages לבדיקות ה-repo.
+- JupyterLab אופציונלי עבור המחברות.
 
-ה-A100 הוא GPU מארכיטקטורת Ampere עם compute capability `8.0`, ולכן ברירת המחדל היא `sm_80`. זו מטרת compilation, לא בדיקת זהות בזמן ריצה: במכונה עם כמה GPUs בחרו A100 באמצעות `CUDA_VISIBLE_DEVICES` ואמתו עם `00_device_query`.
+ה-A100 הוא GPU מארכיטקטורת Ampere עם compute capability `8.0`, ולכן ברירת המחדל היא `sm_80`. זו מטרת compilation, לא הוכחת זהות בזמן ריצה. במכונה עם כמה GPUs בחרו A100 באמצעות `CUDA_VISIBLE_DEVICES` ואמתו עם `00_device_query`.
 
-## התחלה מהירה, 10-15 דקות
+## התחלה מהירה
 
 ```bash
 nvidia-smi
 nvcc --version
-export CUDA_VISIBLE_DEVICES=0  # בחרו כאן את אינדקס ה-A100 מהמכונה
+export CUDA_VISIBLE_DEVICES=0  # החליפו באינדקס ה-A100 שלכם
 make build
-./build/00_device_query
-./build/01_vector_add
 ```
 
-הצלחה נראית בקירוב כך, כשהמספרים תלויים במכונה:
+## מסלול 1: מתחילים מוחלטים
 
-```text
-Device 0: NVIDIA A100 ...
-  compute capability: 8.0
-  warp size: 32
-PASS vector_add: 1048576 values in ... ms
-```
-
-להרצת כל המעבדות:
+קראו קודם את [יסודות CUDA, צעד אחר צעד](docs/00-cuda-foundations.md), ואז הריצו כל דוגמה בנפרד:
 
 ```bash
-make run
+./build/00_device_query
+./build/01_hello_kernel
+./build/02_one_block_index
+./build/03_global_index
+./build/04_bounds_check
+./build/05_memory_roundtrip
+./build/06_vector_add
 ```
 
-לבדיקות מבניות, גם במכונה ללא CUDA:
+או את כל מסלול הבסיס:
+
+```bash
+make run-foundations
+```
+
+אל תתקדמו לפני שאתם מסוגלים להסביר למה אינדקס 0 הוא האיבר הראשון ולמה שישה ערכים עשויים להפעיל שמונה threads.
+
+## מסלול 2: CUDA patterns
+
+1. [מודל הביצוע ואינדוקס](docs/01-execution-model.md)
+2. [זיכרון ו-vector addition](docs/02-memory-and-vector-add.md)
+3. [Grid-stride loops ו-warps](docs/03-grid-stride-and-warps.md)
+4. [Shared memory ו-reduction](docs/04-shared-memory-reduction.md)
+5. [כפל מטריצות ב-tiles](docs/05-tiled-matmul.md)
+6. [מדידה ו-A100](docs/06-profiling-a100.md)
+
+ה-executables המתאימים הם `06_vector_add` עד `09_tiled_matmul`.
+
+## מסלול 3: CUDA בהקשר של LLMs
+
+קראו את [מפת CUDA kernels בתוך LLM](docs/07-llm-kernel-map.md), ואז הריצו:
+
+```bash
+make run-llm
+```
+
+הדוגמאות:
+
+1. `llm_01_token_embedding`: token ID בוחר embedding row.
+2. `llm_02_residual_add`: חיבור residual stream.
+3. `llm_03_silu_activation`: activation בתוך MLP.
+4. `llm_04_rmsnorm`: reduction ו-normalization.
+5. `llm_05_causal_mask`: מי רשאי לראות איזה token.
+6. `llm_06_attention_softmax`: softmax יציב של attention scores.
+7. `llm_07_linear_projection`: הבסיס של Q/K/V ו-LM head.
+8. `llm_08_mini_transformer_step`: embedding -> residual -> RMSNorm -> logits.
+
+אלו kernels חינוכיים. הם אינם תחליף ל-cuBLAS, ‏CUTLASS, ‏FlashAttention או kernels fused של inference engines.
+
+## מחברות Jupyter
+
+- [`00_indexing_cpu.ipynb`](notebooks/00_indexing_cpu.ipynb): אינדוקס ללא GPU.
+- [`01_cuda_basics_a100.ipynb`](notebooks/01_cuda_basics_a100.ipynb): thread יחיד עד vector add, צעד אחר צעד.
+- [`01_vector_add_a100.ipynb`](notebooks/01_vector_add_a100.ipynb): kernel מלא ראשון.
+- [`02_memory_patterns_a100.ipynb`](notebooks/02_memory_patterns_a100.ipynb): grid-stride, reduction ו-tiling.
+- [`03_profile_a100.ipynb`](notebooks/03_profile_a100.ipynb): Nsight Compute.
+- [`04_llm_building_blocks.ipynb`](notebooks/04_llm_building_blocks.ipynb): מעבר מ-token ל-logits דרך kernels חינוכיים.
+
+ראו [הוראות הפעלת המחברות](notebooks/README.md).
+
+## תרגילים ובדיקות
 
 ```bash
 make test
 ```
 
-## מחברות Jupyter
+הבדיקות האלה הן CPU-only structural checks. הן אינן מקמפלות CUDA ואינן מחליפות הרצה על A100.
 
-המחברות משלבות הסבר, קוד, שאלות וניסויים:
-
-1. [`00_indexing_cpu.ipynb`](notebooks/00_indexing_cpu.ipynb): אינדוקס ובדיקות גבול ללא GPU.
-2. [`01_vector_add_a100.ipynb`](notebooks/01_vector_add_a100.ipynb): בנייה והרצת kernel ראשון.
-3. [`02_memory_patterns_a100.ipynb`](notebooks/02_memory_patterns_a100.ipynb): grid-stride, reduction ו-tiling.
-4. [`03_profile_a100.ipynb`](notebooks/03_profile_a100.ipynb): profiling עם Nsight Compute.
-
-הוראות הפעלה נמצאות ב-[מדריך המחברות](notebooks/README.md).
-
-## מסלול הלימוד
-
-1. [מודל הביצוע ואינדוקס](docs/01-execution-model.md), ואז `00_device_query`.
-2. [זיכרון ו-vector addition](docs/02-memory-and-vector-add.md), ואז `01_vector_add`.
-3. [Grid-stride loops ו-warps](docs/03-grid-stride-and-warps.md), ואז `02_grid_stride`.
-4. [Shared memory ו-reduction](docs/04-shared-memory-reduction.md), ואז `03_reduction`.
-5. [כפל מטריצות ב-tiles](docs/05-tiled-matmul.md), ואז `04_tiled_matmul`.
-6. [מדידה ו-A100](docs/06-profiling-a100.md).
-7. [תרגילים](exercises/README.md), ורק אחר כך [פתרונות](solutions/README.md).
+תרגילים נמצאים ב-[exercises](exercises/README.md), וכיווני פתרון ב-[solutions](solutions/README.md).
 
 ## מבנה ה-repo
 
 ```text
-lessons/      קוד CUDA מלא וניתן להרצה
-include/      בדיקת שגיאות וטיימר GPU
-docs/         הסברים בעברית
-notebooks/    מחברות תרגול אינטראקטיביות
-exercises/    משימות לשינוי הקוד
-solutions/    כיווני פתרון, לא העתק מלא של כל מעבדה
-tests/        בדיקות תקינות מבניות ללא GPU
-scripts/      הרצת כל המעבדות
+lessons/       יסודות CUDA ו-patterns כלליים
+llm_examples/  kernels חינוכיים בהקשר של LLMs
+include/       בדיקת שגיאות וטיימר GPU
+docs/          הסברים בעברית
+notebooks/     מחברות תרגול אינטראקטיביות
+exercises/     משימות לתלמיד
+solutions/     כיווני פתרון
+tests/         בדיקות מבניות ללא GPU
+scripts/       הרצת מסלולי הקורס
 ```
 
-## כללי בטיחות ונכונות
+## כללי נכונות
 
 - כל גישה למערך חייבת להיות בתחום התקין.
-- אחרי launch יש לבדוק שגיאות. בזמן לימוד משתמשים גם ב-`cudaDeviceSynchronize()`.
-- אין להשוות זמני kernel באמצעות שעון CPU בלי synchronization.
+- אחרי kernel launch בודקים שגיאות. בזמן לימוד גם מסתנכרנים.
 - תוצאה נכונה קודמת לאופטימיזציה.
-- `256 threads/block` הוא נקודת פתיחה סבירה, לא חוק טבע.
+- `256 threads/block` הוא נקודת פתיחה, לא חוק טבע.
+- reduction שמחלק את מספר המשתתפים ב-2 דורש בדרך כלל block size שהוא חזקה של 2.
+- softmax צריך להיות יציב נומרית: מחסרים את המקסימום לפני `exp`.
 
-## גבולות הקורס
+## אימות אמיתי על A100
 
-הקורס מכוון ליסודות. ה-matmul כאן מדגים tiling אבל אינו מתחרה ב-cuBLAS, CUTLASS או Tensor Cores. בהמשך אפשר להוסיף streams, pinned memory, warp primitives, mixed precision ו-custom PyTorch extensions.
+השתמשו ב-[A100 run checklist](docs/A100-RUN-CHECKLIST.md), כולל `compute-sanitizer` ו-Nsight Compute.
 
 ## מקורות רשמיים
 
 - [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)
 - [CUDA C++ Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/)
 - [Nsight Compute Documentation](https://docs.nvidia.com/nsight-compute/)
-- [NVIDIA A100 Tensor Core GPU Architecture](https://www.nvidia.com/en-us/data-center/a100/)
+- [NVIDIA A100](https://www.nvidia.com/en-us/data-center/a100/)
 
 ## רישיון
 

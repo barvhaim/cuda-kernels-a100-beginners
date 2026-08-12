@@ -31,4 +31,4 @@ Kernel launch הוא בדרך כלל אסינכרוני ביחס ל-CPU. `CudaTi
 
 ## משימת קריאה
 
-פתחו `lessons/01_vector_add.cu` וסמנו את ששת השלבים: host allocation, device allocation, H2D, launch, D2H, verification/free.
+פתחו `lessons/06_vector_add.cu` וסמנו את ששת השלבים: host allocation, device allocation, H2D, launch, D2H, verification/free.

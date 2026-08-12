@@ -23,18 +23,25 @@ export CUDA_VISIBLE_DEVICES=<A100-index>
 ```bash
 make clean
 make build
-make run
+make run-foundations
+make run-patterns
+make run-llm
 ```
 
-נדרש `PASS` מכל ארבע מעבדות החישוב.
+נדרש `PASS` מכל 18 ה-executables: עשרה שיעורי CUDA כלליים ושמונה kernels חינוכיים של LLM.
 
 ## בדיקת זיכרון
 
 ```bash
-compute-sanitizer ./build/01_vector_add
-compute-sanitizer ./build/02_grid_stride
-compute-sanitizer ./build/03_reduction
-compute-sanitizer ./build/04_tiled_matmul
+compute-sanitizer ./build/06_vector_add
+compute-sanitizer ./build/07_grid_stride
+compute-sanitizer ./build/08_reduction
+compute-sanitizer ./build/09_tiled_matmul
+compute-sanitizer ./build/llm_01_token_embedding
+compute-sanitizer ./build/llm_04_rmsnorm
+compute-sanitizer ./build/llm_05_causal_mask
+compute-sanitizer ./build/llm_06_attention_softmax
+compute-sanitizer ./build/llm_08_mini_transformer_step
 ```
 
 נדרש: אפס שגיאות.
@@ -42,8 +49,8 @@ compute-sanitizer ./build/04_tiled_matmul
 ## Profiling בסיסי
 
 ```bash
-ncu --set basic --kernel-name vector_add ./build/01_vector_add
-ncu --set basic --kernel-name tiled_matmul ./build/04_tiled_matmul
+ncu --set basic --kernel-name vector_add ./build/06_vector_add
+ncu --set basic --kernel-name tiled_matmul ./build/09_tiled_matmul
 ```
 
 שמרו את דגם ה-A100 המדויק, גרסת driver, גרסת CUDA, זמן kernel ו-metrics מרכזיים. אל תכניסו מספרי ביצועים ל-README לפני שהפקודות האלה הורצו בפועל.
