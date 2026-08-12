@@ -1,18 +1,18 @@
-# יסודות CUDA, צעד אחר צעד
+# CUDA Foundations, Step by Step
 
-המטרה בפרק הזה היא לא מהירות. המטרה היא שתוכלו להסביר כל שורת קוד לפני שמתקדמים.
+The goal of this chapter is not speed. The goal is to understand every line before moving forward.
 
-## המודל המינימלי
+## The minimum mental model
 
-- ה-CPU נקרא `host`.
-- ה-GPU נקרא `device`.
-- פונקציה עם `__global__` היא kernel שמופעל מה-CPU ורץ על ה-GPU.
-- התחביר `kernel<<<blocks, threads>>>(...)` קובע כמה threads לוגיים יופעלו.
-- האינדקסים מתחילים ב-0.
+- The CPU is the `host`.
+- The GPU is the `device`.
+- A function declared with `__global__` is a kernel launched by the CPU and executed on the GPU.
+- `kernel<<<blocks, threads>>>(...)` chooses how many logical threads to launch.
+- Indexing starts at 0.
 
-## 1. Kernel יחיד ו-thread יחיד
+## 1. One kernel, one thread
 
-קובץ: `lessons/01_hello_kernel.cu`
+File: `lessons/01_hello_kernel.cu`
 
 ```cpp
 __global__ void hello_kernel() {
@@ -22,54 +22,54 @@ __global__ void hello_kernel() {
 hello_kernel<<<1, 1>>>();
 ```
 
-ה-launch מכיל block אחד ובתוכו thread אחד. כאן לומדים רק את הגבול CPU -> GPU.
+This launch contains one block with one thread. For now, focus only on crossing the CPU-to-GPU boundary.
 
-הרצה:
+Run it:
 
 ```bash
 ./build/01_hello_kernel
 ```
 
-## 2. אינדקס בתוך block
+## 2. Indexing inside one block
 
-קובץ: `lessons/02_one_block_index.cu`
+File: `lessons/02_one_block_index.cu`
 
 ```cpp
 show_thread_index<<<1, 4>>>();
 ```
 
-ארבעת ה-threads מקבלים `threadIdx.x` בערכים 0, 1, 2, 3. סדר שורות ה-`printf` אינו מובטח, כי threads רצים במקביל.
+The four threads receive `threadIdx.x` values 0, 1, 2, and 3. The order of the `printf` lines is not guaranteed because the threads execute concurrently.
 
-**קשר ל-LLM:** אפשר לתת לכל thread ממד אחד מתוך hidden state קטן.
+**LLM connection:** each thread could own one dimension of a small hidden state.
 
-## 3. אינדקס גלובלי
+## 3. Global indexing
 
-קובץ: `lessons/03_global_index.cu`
+File: `lessons/03_global_index.cu`
 
 ```cpp
 int i = blockIdx.x * blockDim.x + threadIdx.x;
 ```
 
-עם שני blocks וארבעה threads בכל block מתקבלים אינדקסים 0 עד 7:
+Two blocks with four threads each produce indices 0 through 7:
 
 ```text
 Block 0: 0 1 2 3
 Block 1: 4 5 6 7
 ```
 
-**קשר ל-LLM:** tensor של activations גדול מ-block אחד, ולכן צריך אינדקס ייחודי על פני כל ה-grid.
+**LLM connection:** an activation tensor is usually larger than one block, so every thread needs a unique index across the complete grid.
 
-## 4. Threads עודפים ו-bounds check
+## 4. Extra threads and bounds checks
 
-קובץ: `lessons/04_bounds_check.cu`
+File: `lessons/04_bounds_check.cu`
 
-אם יש שישה ערכים וארבעה threads בכל block:
+For six values and four threads per block:
 
 ```cpp
 blocks = (6 + 4 - 1) / 4;  // 2 blocks
 ```
 
-מופעלים שמונה threads. אינדקסים 6 ו-7 עודפים ולכן חייבים להיעצר ב-guard:
+CUDA launches eight threads. Indices 6 and 7 are extra and must stop at a guard:
 
 ```cpp
 if (i < n) {
@@ -77,13 +77,13 @@ if (i < n) {
 }
 ```
 
-**קשר ל-LLM:** hidden size, מספר tokens או גודל vocabulary לא חייבים להתחלק ב-block size.
+**LLM connection:** hidden size, token count, and vocabulary size do not have to divide evenly by the block size.
 
-## 5. זיכרון: host ל-device ובחזרה
+## 5. Memory: host to device and back
 
-קובץ: `lessons/05_memory_roundtrip.cu`
+File: `lessons/05_memory_roundtrip.cu`
 
-המסלול הוא:
+The data path is:
 
 ```text
 CPU vector
@@ -95,30 +95,30 @@ CPU vector
   -> cudaFree
 ```
 
-**קשר ל-LLM:** token IDs, weights ו-activations חייבים להיות בזיכרון שנגיש ל-GPU בזמן kernel execution.
+**LLM connection:** token IDs, weights, and activations must live in memory accessible to the GPU while a kernel executes.
 
 ## 6. Vector addition
 
-קובץ: `lessons/06_vector_add.cu`
+File: `lessons/06_vector_add.cu`
 
-כעת מחברים אינדוקס, guard וזיכרון לתוכנית מלאה. כל thread מחשב איבר אחד:
+Now combine indexing, a bounds check, and memory management into one complete program. Each thread computes one element:
 
 ```cpp
 c[i] = a[i] + b[i];
 ```
 
-**קשר ל-LLM:** זהו אותו pattern של residual connection:
+**LLM connection:** this is the same pattern as a residual connection:
 
 ```text
 hidden = layer_output + residual
 ```
 
-## לפני שממשיכים
+## Before you continue
 
-אתם מוכנים ל-grid-stride loop רק אם אתם יכולים לענות בלי להסתכל:
+You are ready for grid-stride loops only if you can answer these questions without looking:
 
-1. למה `threadIdx.x = 10` הוא ה-thread ה-11?
-2. למה `blockIdx.x * blockDim.x` מופיע באינדקס הגלובלי?
-3. למה מפעילים לעיתים יותר threads ממספר הערכים?
-4. מה ההבדל בין `host_values` ל-`device_values`?
-5. למה kernel launch זקוק לבדיקת שגיאות ול-synchronization בזמן לימוד?
+1. Why is `threadIdx.x = 10` the 11th thread?
+2. Why does `blockIdx.x * blockDim.x` appear in the global-index formula?
+3. Why do we sometimes launch more threads than values?
+4. What is the difference between `host_values` and `device_values`?
+5. Why should learning code check errors and synchronize after a kernel launch?

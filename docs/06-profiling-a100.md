@@ -1,12 +1,12 @@
-# שיעור 6: מדידה ו-profiling על A100
+# Lesson 6: Measurement and Profiling on A100
 
-## קודם נכונות
+## Correctness first
 
 ```bash
 make run
 ```
 
-כל תוכנית צריכה להדפיס `PASS`. אחר כך מודדים.
+Every program should print `PASS`. Measure only after correctness is established.
 
 ## Nsight Compute
 
@@ -14,34 +14,34 @@ make run
 ncu --set basic --kernel-name vector_add ./build/06_vector_add
 ```
 
-או:
+Or run:
 
 ```bash
 make profile
 ```
 
-מדדים שימושיים למתחילים:
+Useful beginner metrics include:
 
-- Duration: זמן ה-kernel.
-- Memory throughput: כמה מתעבורת הזיכרון הזמינה נוצלה.
-- SM throughput: כמה ממשאבי החישוב נוצלו.
-- Achieved occupancy: כמה warps פעילים היו ביחס למגבלה.
+- Duration: kernel execution time.
+- Memory throughput: the fraction of available memory bandwidth used.
+- SM throughput: the fraction of compute resources used.
+- Achieved occupancy: active warps relative to the hardware limit.
 
-Occupancy גבוה אינו מטרה בפני עצמה. kernel יכול להיות memory-bound גם עם occupancy טוב.
+High occupancy is not a goal by itself. A kernel can remain memory-bound even with good occupancy.
 
-## כללי benchmark
+## Benchmark rules
 
-- בצעו warm-up לפני מדידות רציניות.
-- הריצו כמה פעמים ודווחו median.
-- מדדו kernel בנפרד מהעברות PCIe אם זו השאלה.
-- אל תשוו ל-CPU בלי להגדיר אם זמן ההעתקות כלול.
-- אל תסיקו ביצועי A100 מכך שהקוד רק עבר compilation ל-`sm_80`.
+- Warm up before serious measurements.
+- Run several times and report the median.
+- Measure the kernel separately from PCIe transfers when that is the question.
+- Do not compare with a CPU result without stating whether transfer time is included.
+- Do not infer A100 performance merely because the code compiled for `sm_80`.
 
-## כלי תקינות
+## Correctness tools
 
 ```bash
 compute-sanitizer ./build/06_vector_add
 compute-sanitizer ./build/09_tiled_matmul
 ```
 
-הכלי איטי יותר מהרצה רגילה, אך שימושי למציאת גישות זיכרון שגויות.
+The sanitizer is slower than a normal run, but it is useful for finding invalid memory accesses.

@@ -1,99 +1,99 @@
-# תרגילים
+# Exercises
 
-עבדו לפי הסדר. בכל תרגיל: נחשו קודם, שנו דבר אחד, הריצו, ורשמו מה קרה.
+Work in order. For every exercise: predict first, change one thing, run it, and record what happened.
 
-## חלק א: יסודות
+## Part A: Foundations
 
-### תרגיל 1: מתחילים מ-0
+### Exercise 1: Start at zero
 
-ב-`02_one_block_index`, הפעילו 8 threads. כתבו לפני ההרצה מהם האינדקס הראשון והאחרון ומהו מספרו האנושי של `threadIdx.x=7`.
+In `02_one_block_index`, launch 8 threads. Before running, write down the first index, the last index, and the human-counted position of `threadIdx.x=7`.
 
-### תרגיל 2: אינדקס גלובלי
+### Exercise 2: Global index
 
-ב-`03_global_index`, הפעילו 3 blocks עם 5 threads בכל block. חשבו ידנית את האינדקס של thread 2 ב-block 1 ואת מספר ה-threads הכולל.
+In `03_global_index`, launch 3 blocks with 5 threads in each block. Manually compute the index of thread 2 in block 1 and the total number of threads.
 
-### תרגיל 3: Threads עודפים
+### Exercise 3: Extra threads
 
-ב-`04_bounds_check`, שנו ל-`n=10` ו-`threads=4`. נחשו כמה blocks, כמה threads וכמה threads עודפים יהיו.
+In `04_bounds_check`, set `n=10` and `threads=4`. Predict the block count, launched-thread count, and extra-thread count.
 
-### תרגיל 4: Host ו-device
+### Exercise 4: Host and device
 
-ב-`05_memory_roundtrip`, שנו את ה-kernel מ-`+1` ל-`*2`. עדכנו את expected output רק לאחר שראיתם את הבדיקה נכשלת.
+In `05_memory_roundtrip`, change the kernel from `+1` to `*2`. Update the expected output only after you have observed the test fail.
 
-### תרגיל 5: Vector addition
+### Exercise 5: Vector addition
 
-שנו את `06_vector_add` ל-1000 איברים ו-128 threads/block. הדפיסו את מספר ה-blocks והסבירו למה מופעלים יותר מ-1000 threads.
+Change `06_vector_add` to use 1,000 elements and 128 threads per block. Print the block count and explain why more than 1,000 threads are launched.
 
-## חלק ב: CUDA patterns
+## Part B: CUDA patterns
 
-### תרגיל 6: בכוונה בלי guard
+### Exercise 6: Remove the guard on purpose
 
-צרו עותק מקומי של vector add, הסירו את `if (i < n)` והריצו רק דרך `compute-sanitizer`. אל תשמרו את הגרסה השבורה. תעדו מה הכלי מצא.
+Create a local copy of vector addition, remove `if (i < n)`, and run it only under `compute-sanitizer`. Do not keep the broken version. Record what the tool reports.
 
-### תרגיל 7: Grid-stride SAXPY
+### Exercise 7: Grid-stride SAXPY
 
-שנו את `alpha` ואת ערכי הקלט ב-`07_grid_stride`. עדכנו את expected value וודאו שהבדיקה נכשלת לפני העדכון ועוברת אחריו.
+Change `alpha` and the input values in `07_grid_stride`. Update the expected result and verify that the test fails before the update and passes afterward.
 
-### תרגיל 8: Reduction
+### Exercise 8: Reduction
 
-שנו את הקלט ב-`08_reduction` לערכים `2.0f`. ה-kernel דורש `threads` שהוא חזקה של 2. אל תשנו ל-96 או ל-192. אחר כך החליפו את סיום ה-CPU ב-launches חוזרים עם `threads=256` עד שנשאר סכום יחיד.
+Set the input values in `08_reduction` to `2.0f`. The kernel requires a power-of-two `threads` value. Do not change it to 96 or 192. Then replace the CPU completion with repeated launches using `threads=256` until only one sum remains.
 
-### תרגיל 9: Matmul
+### Exercise 9: Matrix multiplication
 
-נסו `TILE=8`, `16`, `32` ב-`09_tiled_matmul`. ודאו נכונות ומדדו. אין להניח שה-tile הגדול ביותר יהיה המהיר ביותר.
+Try `TILE=8`, `16`, and `32` in `09_tiled_matmul`. Verify correctness and measure each version. Do not assume the largest tile will be fastest.
 
-## חלק ג: LLM kernels
+## Part C: LLM kernels
 
-### תרגיל 10: Embedding lookup
+### Exercise 10: Embedding lookup
 
-ב-`llm_01_token_embedding`, הוסיפו token חמישי לטבלה ושנו את ה-token IDs. ציירו את shape של הטבלה ושל output. לפני שימוש ב-token ID שאינו בתחום, הוסיפו validation בצד ה-CPU שמסרב לבצע את ה-kernel launch. ודאו שהקלט השגוי נדחה בבטחה.
+Add a fifth token to the table in `llm_01_token_embedding` and change the token IDs. Draw the shape of the table and output. Before trying an out-of-range token ID, add CPU validation that rejects the launch. Verify that invalid input is rejected safely.
 
-### תרגיל 11: Residual connection
+### Exercise 11: Residual connection
 
-שנו את hidden vector לאורך 13 ואת block size ל-8. חשבו כמה threads עודפים יהיו והסבירו למה guard נחוץ.
+Change the hidden vector length to 13 and the block size to 8. Compute the number of extra threads and explain why the guard is required.
 
-### תרגיל 12: SiLU ו-SwiGLU
+### Exercise 12: SiLU and SwiGLU
 
-הריצו SiLU על 9 ערכים עם 4 threads. לאחר מכן הוסיפו vector שני `gate` וחשבו גרסה חינוכית:
+Run SiLU on 9 values with 4 threads. Then add a second vector called `gate` and compute an educational version of:
 
 ```text
 output[i] = SiLU(up[i]) * gate[i]
 ```
 
-### תרגיל 13: RMSNorm
+### Exercise 13: RMSNorm
 
-שנו את weights כך שלא יהיו כולם 1. השוו ל-reference ב-Python. הסבירו אילו ערכים משותפים לכל ה-threads ואילו פרטיים לכל thread.
+Change the weights so they are not all 1. Compare with a Python reference. Explain which values are shared by all threads and which values are private to one thread.
 
-### תרגיל 14: Causal mask
+### Exercise 14: Causal mask
 
-שנו את sequence length ל-5. ודאו ש-grid של 2x2 threads עדיין מכסה את כל 25 התאים בעזרת bounds checks.
+Change the sequence length to 5. Verify that a grid of 2x2-thread blocks still covers all 25 cells through two-dimensional bounds checks.
 
-### תרגיל 15: Stable softmax
+### Exercise 15: Stable softmax
 
-הסירו זמנית את חיסור המקסימום והשאירו scores סביב 1000. תעדו את `inf` או `nan`, החזירו את התיקון והריצו שוב.
+Temporarily remove maximum subtraction while keeping scores near 1000. Record the resulting `inf` or `nan`, restore the fix, and run again.
 
-### תרגיל 16: Q projection
+### Exercise 16: Q projection
 
-שנו את `llm_07_linear_projection` מ-output size של 2 ל-3. כתבו reference ב-Python והשוו כל output dimension.
+Change `llm_07_linear_projection` from output size 2 to output size 3. Write a Python reference and compare every output dimension.
 
-### תרגיל 17: Mini transformer step
+### Exercise 17: Mini Transformer step
 
-הדפיסו או העתיקו חזרה ל-host גם את hidden state אחרי embedding, אחרי residual ואחרי RMSNorm. תעדו את shape והערכים בכל boundary.
+Print or copy back to the host the hidden state after embedding, after residual addition, and after RMSNorm. Record the shape and values at every boundary.
 
-### תרגיל 18: מה כדאי לבצע ב-fusion?
+### Exercise 18: What should be fused?
 
-בחרו שתי פעולות סמוכות ב-mini pipeline. הסבירו אילו כתיבות וקריאות ל-global memory אפשר לחסוך אם מאחדים אותן, ומה המחיר מבחינת מורכבות ובדיקות.
+Choose two adjacent operations in the mini pipeline. Explain which global-memory writes and reads a fused kernel could avoid, and describe the cost in complexity and testing.
 
-## ניסוי A100
+## A100 experiment
 
-הריצו Nsight Compute על `06_vector_add`, ‏`llm_04_rmsnorm` ו-`llm_07_linear_projection`. לכל kernel כתבו השערה: memory-bound או compute-bound, והביאו שני metrics שתומכים בה.
+Run Nsight Compute on `06_vector_add`, `llm_04_rmsnorm`, and `llm_07_linear_projection`. For each kernel, predict whether it is memory-bound or compute-bound and cite two metrics that support your conclusion.
 
-## יומן התקדמות
+## Progress log
 
-לכל תרגיל רשמו:
+For every exercise, record:
 
-- הפקודה שהרצתם.
-- shape של כל input ו-output.
-- התוצאה הצפויה והאמיתית.
-- כשל אחד שראיתם ומה גרם לו.
-- דבר אחד שאתם מסוגלים להסביר עכשיו בלי להסתכל בקוד.
+- The command you ran.
+- The shape of every input and output.
+- The expected and actual result.
+- One failure you observed and its cause.
+- One concept you can now explain without looking at the code.

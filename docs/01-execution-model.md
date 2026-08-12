@@ -1,34 +1,34 @@
-# שיעור 1: Grid, block, thread ו-warp
+# Lesson 1: Grid, Block, Thread, and Warp
 
-## הרעיון
+## The idea
 
-Kernel הוא פונקציה שמופעלת על ה-GPU בהרבה threads. כל thread מריץ את אותו קוד, אבל מקבל מזהים שונים.
+A kernel is a function executed on the GPU by many threads. Every thread runs the same code but receives different identifiers.
 
 ```cpp
 int i = blockIdx.x * blockDim.x + threadIdx.x;
 ```
 
-כל האינדקסים מתחילים ב-0:
+All indices start at 0:
 
-- `blockIdx.x = 2` הוא ה-block השלישי.
-- `threadIdx.x = 10` הוא ה-thread ה-11 בתוך אותו block.
-- אם `blockDim.x = 128`, האינדקס הגלובלי הוא `266`, כלומר האיבר ה-267.
+- `blockIdx.x = 2` identifies the third block.
+- `threadIdx.x = 10` identifies the 11th thread inside that block.
+- If `blockDim.x = 128`, the global index is `266`, which is the 267th element in human counting.
 
-## ההיררכיה
+## The hierarchy
 
-- Grid: כל ה-launch.
-- Block: קבוצת threads שיכולה לשתף shared memory ולהסתנכרן.
-- Thread: מופע לוגי אחד של ה-kernel.
-- Warp: קבוצת ביצוע של 32 threads ב-NVIDIA GPU.
+- Grid: the complete kernel launch.
+- Block: a group of threads that can share memory and synchronize.
+- Thread: one logical instance of the kernel.
+- Warp: an execution group of 32 threads on an NVIDIA GPU.
 
-## למה מתחילים ב-`00_device_query`?
+## Why start with `00_device_query`?
 
-לפני שמניחים שיש A100, הקוד שואל את CUDA runtime מה קיים בפועל. חפשו בפלט compute capability `8.0` ו-warp size `32`.
+Before assuming an A100 is present, ask the CUDA runtime what hardware actually exists. Look for compute capability `8.0` and warp size `32` in the output.
 
-## בדיקת הבנה
+## Check your understanding
 
-עם 4 blocks של 256 threads:
+With 4 blocks of 256 threads:
 
-- כמה threads לוגיים הופעלו?
-- איזה אינדקס גלובלי מקבל thread 7 ב-block 3?
-- מהו מספרו האנושי של אותו איבר?
+- How many logical threads are launched?
+- What global index does thread 7 in block 3 receive?
+- What is the human-counted position of that element?

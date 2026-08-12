@@ -46,6 +46,26 @@ def notebook_source(filename):
 
 
 class RepositoryContractTests(unittest.TestCase):
+    def test_course_content_is_english_only(self):
+        hebrew = re.compile(r"[\u0590-\u05FF]")
+        bidi_controls = re.compile(r"[\u200e\u200f\u202a-\u202e\u2066-\u2069]")
+        learning_paths = [
+            ROOT / "README.md",
+            ROOT / "docs",
+            ROOT / "exercises",
+            ROOT / "solutions",
+            ROOT / "notebooks",
+        ]
+        files = []
+        for path in learning_paths:
+            files.extend([path] if path.is_file() else path.rglob("*"))
+        for path in files:
+            if not path.is_file():
+                continue
+            text = path.read_text()
+            self.assertIsNone(hebrew.search(text), f"Hebrew text remains in {path}")
+            self.assertIsNone(bidi_controls.search(text), f"Bidi control remains in {path}")
+
     def test_all_cuda_targets_exist_and_are_built(self):
         cmake = (ROOT / "CMakeLists.txt").read_text()
         for target, relative_source in {**LESSONS, **LLM_EXAMPLES}.items():

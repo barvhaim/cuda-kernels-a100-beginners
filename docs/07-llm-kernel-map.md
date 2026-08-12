@@ -1,10 +1,10 @@
-# מפת CUDA kernels בתוך LLM
+# A Map of CUDA Kernels Inside an LLM
 
-התיקייה `llm_examples/` מחברת כל primitive של CUDA לפעולה מוכרת ב-Transformer. הדוגמאות קטנות ומכוונות ללמידה, לא לביצועי production.
+The `llm_examples/` directory connects CUDA primitives to familiar Transformer operations. These examples are intentionally small and educational, not production implementations.
 
-כמה דוגמאות ממפות vector או attention row יחיד ל-block יחיד. לכן ה-shapes הזעירים נבחרו כך שיתאימו למספר ה-threads המרבי ב-block, ו-reductions משתמשים בגודל שהוא חזקה של 2. הגדלת shapes דורשת grid נוסף או לולאה, לא רק שינוי קבוע.
+Several examples map one vector or one attention row to a single block. Their tiny shapes fit the maximum number of threads in a block, and their reductions use power-of-two sizes. Scaling these examples requires another grid dimension or a loop, not merely changing a constant.
 
-## מפת הזרימה
+## The data flow
 
 ```text
 token ID
@@ -18,48 +18,48 @@ token ID
 
 ## 1. Token embedding
 
-קובץ: `llm_examples/01_token_embedding.cu`
+File: `llm_examples/01_token_embedding.cu`
 
-Token ID הוא אינדקס של שורה בטבלת embeddings. כל block מטפל ב-token position אחד, וכל thread מעתיק hidden dimension אחד.
+A token ID selects a row from the embedding table. Each block handles one token position, and each thread copies one hidden dimension.
 
-לומדים: אינדוקס 2D לוגי, memory layout מסוג row-major, והקשר בין token ל-hidden vector.
+You learn logical two-dimensional indexing, row-major memory layout, and the relationship between a token and its hidden vector. Both the host and kernel validate token IDs before accessing the table.
 
 ## 2. Residual connection
 
-קובץ: `llm_examples/02_residual_add.cu`
+File: `llm_examples/02_residual_add.cu`
 
 ```cpp
 hidden_out[i] = layer_output[i] + residual[i];
 ```
 
-זהו vector addition בהקשר אמיתי של LLM. שמונה threads מופעלים עבור חמישה ערכים, ולכן guard מגן על שלושת ה-threads העודפים.
+This is vector addition in a real LLM context. Eight threads are launched for five values, so a bounds check protects the three extra threads.
 
 ## 3. SiLU activation
 
-קובץ: `llm_examples/03_silu_activation.cu`
+File: `llm_examples/03_silu_activation.cu`
 
 ```text
 SiLU(x) = x * sigmoid(x)
 ```
 
-הדוגמה משתמשת ב-grid-stride loop. במודלי LLM רבים SiLU מופיעה ב-gated MLP, למשל כחלק מ-SwiGLU.
+The example uses a grid-stride loop and a numerically stable sigmoid formula, including a test input of `-100`. Many LLMs use SiLU in a gated MLP, for example as part of SwiGLU.
 
 ## 4. RMSNorm
 
-קובץ: `llm_examples/04_rmsnorm.cu`
+File: `llm_examples/04_rmsnorm.cu`
 
 ```text
 inverse_rms = 1 / sqrt(mean(x^2) + epsilon)
 output[i] = x[i] * inverse_rms * weight[i]
 ```
 
-כאן מופיעים shared memory, reduction, synchronization ו-normalization. הדוגמה מטפלת ב-hidden vector אחד וב-block אחד.
+This example combines shared memory, reduction, synchronization, and normalization. It handles one hidden vector with one block and explicitly enforces that one-block limitation.
 
 ## 5. Causal attention mask
 
-קובץ: `llm_examples/05_causal_mask.cu`
+File: `llm_examples/05_causal_mask.cu`
 
-כל thread מחשב תא אחד במטריצת query x key. מיקום query יכול לראות רק keys שאינם בעתיד:
+Each thread computes one cell in a query-by-key matrix. A query position can see only keys that are not in the future:
 
 ```text
 0 X X X
@@ -68,46 +68,46 @@ output[i] = x[i] * inverse_rms * weight[i]
 0 0 0 0
 ```
 
-`0` פירושו visible, ו-`X` מקבל `-INFINITY`. זוהי additive mask חינוכית ל-FP32: מחברים אותה ל-attention scores לפני softmax, ולכן ההסתברות של future position נעשית 0. ב-production צריך להתאים את ה-sentinel וה-casting ל-dtype ול-kernel בפועל.
+`0` means visible, and `X` receives `-INFINITY`. This is an educational additive mask for FP32: add it to the attention scores before softmax, and future positions receive probability 0. In production, choose the sentinel and casting behavior according to the actual dtype and fused kernel.
 
 ## 6. Stable attention softmax
 
-קובץ: `llm_examples/06_attention_softmax.cu`
+File: `llm_examples/06_attention_softmax.cu`
 
-הדוגמה מתחילה ב-scores סביב 1000 כדי להראות למה אסור לחשב `exp(score)` ישירות. קודם מחסרים את המקסימום:
+The example starts with scores near 1000 to show why computing `exp(score)` directly is unsafe. Subtract the maximum first:
 
 ```text
 softmax(x) = exp(x - max(x)) / sum(exp(x - max(x)))
 ```
 
-לומדים: max-reduction, sum-reduction ויציבות נומרית.
+You learn max reduction, sum reduction, and numerical stability. The program compares every probability with a CPU reference and rejects non-finite or negative outputs.
 
 ## 7. Linear projection
 
-קובץ: `llm_examples/07_linear_projection.cu`
+File: `llm_examples/07_linear_projection.cu`
 
-כל output dimension הוא dot product. אותו רעיון עומד בבסיס Q, K, V projections, שכבות MLP ו-LM head.
+Each output dimension is a dot product. The same idea underlies Q, K, and V projections, MLP layers, and the LM head.
 
-המימוש החינוכי איטי. ב-production משתמשים בדרך כלל ב-cuBLAS, ‏CUTLASS או kernels fused.
+The educational implementation is slow. Production code normally uses cuBLAS, CUTLASS, or fused kernels.
 
-## 8. Mini transformer step
+## 8. Mini Transformer step
 
-קובץ: `llm_examples/08_mini_transformer_step.cu`
+File: `llm_examples/08_mini_transformer_step.cu`
 
-הדוגמה מחברת ארבעה kernels:
+This example connects four kernels:
 
 ```text
 embedding lookup -> residual add -> RMSNorm -> logits projection
 ```
 
-זה אינו Transformer מלא: אין multi-head attention, ‏KV cache או sampling. המטרה היא לראות כיצד tensors עוברים בין kernels וכיצד output של kernel אחד הופך ל-input של הבא.
+It is not a complete Transformer: it has no multi-head attention, KV cache, or sampling. Its purpose is to show how tensors move between kernels and how one kernel's output becomes the next kernel's input. The final logits are compared with a CPU reference.
 
-## מה שונה ב-production?
+## What changes in production?
 
-- פעולות רבות fused כדי לחסוך קריאות וכתיבות ל-global memory.
-- matmul משתמש ב-Tensor Cores ובפורמטים כמו BF16/FP16/FP8.
-- softmax מטפל בשורות רבות, masking ויציבות נומרית מתקדמת.
-- RMSNorm מטפל ב-batches וב-tokens רבים.
-- inference server מנהל KV cache, batching, streams וזיכרון.
+- Many operations are fused to avoid repeated global-memory reads and writes.
+- Matrix multiplication uses Tensor Cores and formats such as BF16, FP16, or FP8.
+- Softmax handles many rows, masking, and more advanced numerical concerns.
+- RMSNorm handles batches and many token positions.
+- An inference server manages the KV cache, batching, streams, and memory.
 
-הדרך הנכונה ללמוד היא להבין קודם את הגרסה הקטנה, למדוד אותה, ואז להשוות ל-library kernel אמיתי.
+The right learning path is to understand the small version first, measure it, and then compare it with a real library kernel.

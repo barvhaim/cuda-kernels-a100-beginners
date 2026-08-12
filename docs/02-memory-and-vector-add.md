@@ -1,14 +1,14 @@
-# שיעור 2: זיכרון וחיבור וקטורים
+# Lesson 2: Memory and Vector Addition
 
-## המסלול
+## The path
 
 ```text
 host vectors -> cudaMemcpy HostToDevice -> kernel -> cudaMemcpy DeviceToHost -> verification
 ```
 
-`cudaMalloc` מקצה device memory. ה-kernel מקבל `d_a`, `d_b`, `d_c`, ולא את ה-vectors של ה-CPU.
+`cudaMalloc` allocates device memory. The kernel receives `d_a`, `d_b`, and `d_c`, not the CPU vectors.
 
-## ה-kernel
+## The kernel
 
 ```cpp
 __global__ void vector_add(const float* a, const float* b, float* c, int n) {
@@ -17,18 +17,18 @@ __global__ void vector_add(const float* a, const float* b, float* c, int n) {
 }
 ```
 
-מספר ה-blocks מחושב בעיגול כלפי מעלה:
+Round the number of blocks upward:
 
 ```cpp
 int blocks = (n + threads - 1) / threads;
 ```
 
-לכן ייתכן שיופעלו threads עודפים. התנאי `i < n` מונע גישה מחוץ למערך.
+This can launch extra threads. The `i < n` condition prevents out-of-bounds access.
 
-## אסינכרוניות
+## Asynchronous execution
 
-Kernel launch הוא בדרך כלל אסינכרוני ביחס ל-CPU. `CudaTimer` משתמש ב-CUDA events, והעתקה סינכרונית חזרה ל-host ממתינה לעבודה הדרושה.
+A kernel launch is usually asynchronous with respect to the CPU. `CudaTimer` uses CUDA events, while a synchronous copy back to the host waits for the required work to complete.
 
-## משימת קריאה
+## Reading task
 
-פתחו `lessons/06_vector_add.cu` וסמנו את ששת השלבים: host allocation, device allocation, H2D, launch, D2H, verification/free.
+Open `lessons/06_vector_add.cu` and identify six stages: host allocation, device allocation, H2D copy, launch, D2H copy, and verification/free.

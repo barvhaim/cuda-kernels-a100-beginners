@@ -1,8 +1,8 @@
-# A100 run checklist
+# A100 Run Checklist
 
-המסמך הזה מפריד בין תקינות ה-repo לבין אימות אמיתי על GPU.
+This checklist separates repository consistency from real GPU validation.
 
-## סביבה
+## Environment
 
 ```bash
 nvidia-smi
@@ -10,15 +10,15 @@ nvcc --version
 cmake --version
 ```
 
-במכונה עם כמה GPUs, מצאו את אינדקס ה-A100 ובחרו אותו לפני ההרצה:
+On a multi-GPU machine, identify the A100 index and select it before running the course:
 
 ```bash
 export CUDA_VISIBLE_DEVICES=<A100-index>
 ```
 
-ודאו שה-device query מדווח שם המכיל `A100` ו-compute capability `8.0`. ‏`sm_80` לבדו אינו מוכיח שהחומרה היא A100.
+Verify that the device query reports a name containing `A100` and compute capability `8.0`. An `sm_80` build target alone does not prove that the runtime GPU is an A100.
 
-## Build והרצה
+## Build and run
 
 ```bash
 make clean
@@ -28,9 +28,9 @@ make run-patterns
 make run-llm
 ```
 
-נדרש `PASS` מכל 18 ה-executables: עשרה שיעורי CUDA כלליים ושמונה kernels חינוכיים של LLM.
+All 18 executables should report `PASS`: ten general CUDA lessons and eight educational LLM kernels.
 
-## בדיקת זיכרון
+## Memory validation
 
 ```bash
 compute-sanitizer ./build/06_vector_add
@@ -44,13 +44,13 @@ compute-sanitizer ./build/llm_06_attention_softmax
 compute-sanitizer ./build/llm_08_mini_transformer_step
 ```
 
-נדרש: אפס שגיאות.
+Required result: zero errors.
 
-## Profiling בסיסי
+## Basic profiling
 
 ```bash
 ncu --set basic --kernel-name vector_add ./build/06_vector_add
 ncu --set basic --kernel-name tiled_matmul ./build/09_tiled_matmul
 ```
 
-שמרו את דגם ה-A100 המדויק, גרסת driver, גרסת CUDA, זמן kernel ו-metrics מרכזיים. אל תכניסו מספרי ביצועים ל-README לפני שהפקודות האלה הורצו בפועל.
+Record the exact A100 model, driver version, CUDA version, kernel time, and important metrics. Do not add performance numbers to the README before running these commands on the real hardware.

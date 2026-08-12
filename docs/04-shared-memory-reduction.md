@@ -1,24 +1,24 @@
-# שיעור 4: Shared memory ו-reduction
+# Lesson 4: Shared Memory and Reduction
 
-Reduction הופך מערך לערך אחד, למשל סכום. threads באותו block טוענים ערכים ל-shared memory, מחברים בזוגות ומקטינים את מספר הערכים הפעילים בכל סיבוב.
+A reduction turns an array into one value, such as a sum. Threads in a block load values into shared memory, combine pairs, and reduce the number of active values in every round.
 
-## למה צריך synchronization?
+## Why synchronize?
 
 ```cpp
 values[tid] = value;
 __syncthreads();
 ```
 
-בלי המחסום, thread עלול לקרוא תא לפני ש-thread אחר כתב אליו. `__syncthreads()` מסנכרן threads באותו block בלבד, לא את כל ה-grid.
+Without the barrier, one thread could read a location before another thread writes it. `__syncthreads()` synchronizes threads in one block only, not the complete grid.
 
-## למה יש partial sums?
+## Why produce partial sums?
 
-blocks שונים אינם מסתנכרנים בעזרת `__syncthreads()`. כל block כותב סכום חלקי, והדוגמה מסיימת את החיבור ב-CPU כדי לשמור על הקוד הראשון ברור.
+Different blocks cannot synchronize with `__syncthreads()`. Each block writes one partial sum. The introductory example completes the final addition on the CPU to keep the first reduction easy to follow.
 
-## אינווריאנט של הדוגמה
+## An invariant of this example
 
-לולאת ה-reduction חוצה את `offset` בכל סיבוב, ולכן מספר ה-threads ב-block חייב להיות חזקה של 2. הקוד משתמש ב-`static_assert` כדי ששינוי שגוי, למשל 96 או 192, ייכשל בזמן compilation במקום להחזיר סכום חלקי בשקט.
+The reduction loop halves `offset` in every round, so the thread count per block must be a power of two. A `static_assert` makes an invalid change, such as 96 or 192 threads, fail during compilation instead of silently returning a partial sum.
 
-## מלכודת
+## A common trap
 
-אסור שרק חלק מה-threads ב-block יגיעו ל-`__syncthreads()` כאשר אחרים מדלגים עליו. זה עלול לגרום להתנהגות לא תקינה או deadlock.
+Do not let only some threads in a block reach `__syncthreads()` while others skip it. That can cause invalid behavior or a deadlock.

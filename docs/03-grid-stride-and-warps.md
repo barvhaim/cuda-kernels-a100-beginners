@@ -1,8 +1,8 @@
-# שיעור 3: Grid-stride loop ו-warps
+# Lesson 3: Grid-Stride Loops and Warps
 
-## למה לא thread אחד לכל איבר תמיד?
+## Why not always launch one thread per element?
 
-אפשר להפעיל grid קטן יחסית ולתת לכל thread לטפל בכמה איברים:
+You can launch a relatively small grid and let every thread process multiple elements:
 
 ```cpp
 int start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -12,16 +12,16 @@ for (int i = start; i < n; i += stride) {
 }
 ```
 
-כך אותו kernel מתאים לגדלי קלט שונים, ומספר ה-blocks יכול להיקבע לפי מספר ה-SMs.
+The same kernel can now handle different input sizes, while the block count can be chosen according to the number of SMs.
 
 ## Memory coalescing
 
-threads סמוכים ב-warp ניגשים כאן לאינדקסים סמוכים. זהו pattern נוח למערכת הזיכרון. גישה כמו `x[i * 32]` בדרך כלל פחות ידידותית.
+Adjacent threads in a warp access adjacent indices in this example. This pattern is friendly to the memory system. An access pattern such as `x[i * 32]` is usually less efficient.
 
 ## Warp divergence
 
-threads ב-warp מבצעים הוראות יחד. אם חצי מהם נכנסים לענף וחצי לא, שני הנתיבים עשויים להתבצע בנפרד. בדיקת גבול קצרה בקצה grid היא נורמלית; branching כבד לפי `threadIdx.x` דורש חשיבה.
+Threads in a warp execute instructions together. If half enter one branch and half enter another, the paths may execute separately. A short boundary check at the edge of a grid is normal; heavy branching based on `threadIdx.x` deserves careful analysis.
 
-## ב-A100
+## On A100
 
-מספר ה-SMs משתנה בין גרסאות A100, ולכן המעבדה קוראת אותו בזמן ריצה במקום לקודד מספר קבוע.
+The number of SMs differs between A100 variants, so the lesson reads it at runtime instead of hard-coding a value.

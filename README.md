@@ -1,50 +1,50 @@
-# CUDA Kernels למתחילים על NVIDIA A100
+# CUDA Kernels for Beginners on NVIDIA A100
 
-קורס מעשי בעברית שמתחיל מ-kernel יחיד ו-thread יחיד, ומתקדם עד building blocks של LLMs כמו embeddings, ‏residual connections, ‏RMSNorm, ‏attention softmax ו-linear projections.
+A practical English course that starts with one kernel and one thread, then progresses to LLM building blocks such as embeddings, residual connections, RMSNorm, attention softmax, and linear projections.
 
-## למי הקורס מיועד?
+## Who is this course for?
 
-לא צריך ניסיון קודם ב-CUDA. כן כדאי להכיר:
+No previous CUDA experience is required. You should be comfortable with:
 
-- משתנים, לולאות, פונקציות ומערכים
-- C או C++ ברמה בסיסית
-- הרצת פקודות ב-Linux terminal
+- Variables, loops, functions, and arrays
+- Basic C or C++
+- Running commands in a Linux terminal
 
-## מה תלמדו?
+## What will you learn?
 
-בסיום תוכלו:
+By the end of the course, you will be able to:
 
-- להסביר מהו kernel ומה עושים `<<<blocks, threads>>>`.
-- לחשב `threadIdx`, ‏`blockIdx` ואינדקס גלובלי, החל מ-0.
-- להבין למה צריך bounds check.
-- להעביר נתונים בין CPU ל-GPU.
-- לכתוב vector addition ו-grid-stride loop.
-- להבין shared memory, ‏synchronization ו-reduction.
-- למפות CUDA primitives ל-embedding, ‏residual, ‏RMSNorm, ‏softmax ו-projections בתוך LLM.
-- למדוד kernel באמצעות CUDA events ו-Nsight Compute.
+- Explain what a kernel is and what `<<<blocks, threads>>>` means.
+- Compute `threadIdx`, `blockIdx`, and a zero-based global index.
+- Explain why CUDA kernels need bounds checks.
+- Move data between the CPU and GPU.
+- Write vector addition and grid-stride loops.
+- Understand shared memory, synchronization, and reduction.
+- Map CUDA primitives to embeddings, residual connections, RMSNorm, softmax, and projections in an LLM.
+- Measure kernels with CUDA events and Nsight Compute.
 
-## דרישות
+## Requirements
 
-- NVIDIA A100 עם driver תקין.
-- CUDA Toolkit הכולל `nvcc`.
-- CMake 3.24 ומעלה.
-- Linux ו-compiler התומך ב-C++17.
-- JupyterLab אופציונלי עבור המחברות.
+- An NVIDIA A100 with a working driver
+- CUDA Toolkit, including `nvcc`
+- CMake 3.24 or newer
+- Linux and a compiler with C++17 support
+- JupyterLab, optionally, for the notebooks
 
-ה-A100 הוא GPU מארכיטקטורת Ampere עם compute capability `8.0`, ולכן ברירת המחדל היא `sm_80`. זו מטרת compilation, לא הוכחת זהות בזמן ריצה. במכונה עם כמה GPUs בחרו A100 באמצעות `CUDA_VISIBLE_DEVICES` ואמתו עם `00_device_query`.
+The A100 is an Ampere GPU with compute capability `8.0`, so the default build target is `sm_80`. This is a compilation target, not proof of the runtime GPU identity. On a multi-GPU machine, select an A100 with `CUDA_VISIBLE_DEVICES` and verify it with `00_device_query`.
 
-## התחלה מהירה
+## Quick start
 
 ```bash
 nvidia-smi
 nvcc --version
-export CUDA_VISIBLE_DEVICES=0  # החליפו באינדקס ה-A100 שלכם
+export CUDA_VISIBLE_DEVICES=0  # Replace with the index of your A100
 make build
 ```
 
-## מסלול 1: מתחילים מוחלטים
+## Track 1: Complete beginners
 
-קראו קודם את [יסודות CUDA, צעד אחר צעד](docs/00-cuda-foundations.md), ואז הריצו כל דוגמה בנפרד:
+Start with [CUDA Foundations, Step by Step](docs/00-cuda-foundations.md), then run each example separately:
 
 ```bash
 ./build/00_device_query
@@ -56,101 +56,101 @@ make build
 ./build/06_vector_add
 ```
 
-או את כל מסלול הבסיס:
+Or run the complete foundations track:
 
 ```bash
 make run-foundations
 ```
 
-אל תתקדמו לפני שאתם מסוגלים להסביר למה אינדקס 0 הוא האיבר הראשון ולמה שישה ערכים עשויים להפעיל שמונה threads.
+Do not move on until you can explain why index 0 is the first element and why six values may launch eight threads.
 
-## מסלול 2: CUDA patterns
+## Track 2: CUDA patterns
 
-1. [מודל הביצוע ואינדוקס](docs/01-execution-model.md)
-2. [זיכרון ו-vector addition](docs/02-memory-and-vector-add.md)
-3. [Grid-stride loops ו-warps](docs/03-grid-stride-and-warps.md)
-4. [Shared memory ו-reduction](docs/04-shared-memory-reduction.md)
-5. [כפל מטריצות ב-tiles](docs/05-tiled-matmul.md)
-6. [מדידה ו-A100](docs/06-profiling-a100.md)
+1. [Execution Model and Indexing](docs/01-execution-model.md)
+2. [Memory and Vector Addition](docs/02-memory-and-vector-add.md)
+3. [Grid-Stride Loops and Warps](docs/03-grid-stride-and-warps.md)
+4. [Shared Memory and Reduction](docs/04-shared-memory-reduction.md)
+5. [Tiled Matrix Multiplication](docs/05-tiled-matmul.md)
+6. [Profiling on A100](docs/06-profiling-a100.md)
 
-ה-executables המתאימים הם `06_vector_add` עד `09_tiled_matmul`.
+The corresponding executables are `06_vector_add` through `09_tiled_matmul`.
 
-## מסלול 3: CUDA בהקשר של LLMs
+## Track 3: CUDA in LLMs
 
-קראו את [מפת CUDA kernels בתוך LLM](docs/07-llm-kernel-map.md), ואז הריצו:
+Read [A Map of CUDA Kernels Inside an LLM](docs/07-llm-kernel-map.md), then run:
 
 ```bash
 make run-llm
 ```
 
-הדוגמאות:
+The examples are:
 
-1. `llm_01_token_embedding`: token ID בוחר embedding row.
-2. `llm_02_residual_add`: חיבור residual stream.
-3. `llm_03_silu_activation`: activation בתוך MLP.
-4. `llm_04_rmsnorm`: reduction ו-normalization.
-5. `llm_05_causal_mask`: מי רשאי לראות איזה token.
-6. `llm_06_attention_softmax`: softmax יציב של attention scores.
-7. `llm_07_linear_projection`: הבסיס של Q/K/V ו-LM head.
+1. `llm_01_token_embedding`: a token ID selects an embedding row.
+2. `llm_02_residual_add`: add the residual stream.
+3. `llm_03_silu_activation`: an activation used inside an MLP.
+4. `llm_04_rmsnorm`: reduction and normalization.
+5. `llm_05_causal_mask`: control which tokens may be attended to.
+6. `llm_06_attention_softmax`: numerically stable softmax over attention scores.
+7. `llm_07_linear_projection`: the foundation of Q/K/V projections and the LM head.
 8. `llm_08_mini_transformer_step`: embedding -> residual -> RMSNorm -> logits.
 
-אלו kernels חינוכיים. הם אינם תחליף ל-cuBLAS, ‏CUTLASS, ‏FlashAttention או kernels fused של inference engines.
+These are educational kernels. They do not replace cuBLAS, CUTLASS, FlashAttention, or fused kernels in production inference engines.
 
-## מחברות Jupyter
+## Jupyter notebooks
 
-- [`00_indexing_cpu.ipynb`](notebooks/00_indexing_cpu.ipynb): אינדוקס ללא GPU.
-- [`01_cuda_basics_a100.ipynb`](notebooks/01_cuda_basics_a100.ipynb): thread יחיד עד vector add, צעד אחר צעד.
-- [`01_vector_add_a100.ipynb`](notebooks/01_vector_add_a100.ipynb): kernel מלא ראשון.
-- [`02_memory_patterns_a100.ipynb`](notebooks/02_memory_patterns_a100.ipynb): grid-stride, reduction ו-tiling.
-- [`03_profile_a100.ipynb`](notebooks/03_profile_a100.ipynb): Nsight Compute.
-- [`04_llm_building_blocks.ipynb`](notebooks/04_llm_building_blocks.ipynb): מעבר מ-token ל-logits דרך kernels חינוכיים.
+- [`00_indexing_cpu.ipynb`](notebooks/00_indexing_cpu.ipynb): learn indexing without a GPU.
+- [`01_cuda_basics_a100.ipynb`](notebooks/01_cuda_basics_a100.ipynb): one thread through vector addition, step by step.
+- [`01_vector_add_a100.ipynb`](notebooks/01_vector_add_a100.ipynb): your first complete CUDA program.
+- [`02_memory_patterns_a100.ipynb`](notebooks/02_memory_patterns_a100.ipynb): grid-stride loops, reduction, and tiling.
+- [`03_profile_a100.ipynb`](notebooks/03_profile_a100.ipynb): profile with Nsight Compute.
+- [`04_llm_building_blocks.ipynb`](notebooks/04_llm_building_blocks.ipynb): follow a token through educational kernels to logits.
 
-ראו [הוראות הפעלת המחברות](notebooks/README.md).
+See the [notebook instructions](notebooks/README.md).
 
-## תרגילים ובדיקות
+## Exercises and tests
 
 ```bash
 make test
 ```
 
-הבדיקות האלה הן CPU-only structural checks. הן אינן מקמפלות CUDA ואינן מחליפות הרצה על A100.
+These tests are CPU-only structural checks. They do not compile CUDA and do not replace validation on an A100.
 
-תרגילים נמצאים ב-[exercises](exercises/README.md), וכיווני פתרון ב-[solutions](solutions/README.md).
+Exercises are in [exercises](exercises/README.md), with solution guidance in [solutions](solutions/README.md).
 
-## מבנה ה-repo
+## Repository structure
 
 ```text
-lessons/       יסודות CUDA ו-patterns כלליים
-llm_examples/  kernels חינוכיים בהקשר של LLMs
-include/       בדיקת שגיאות וטיימר GPU
-docs/          הסברים בעברית
-notebooks/     מחברות תרגול אינטראקטיביות
-exercises/     משימות לתלמיד
-solutions/     כיווני פתרון
-tests/         בדיקות מבניות ללא GPU
-scripts/       הרצת מסלולי הקורס
+lessons/       CUDA foundations and general patterns
+llm_examples/  educational kernels in an LLM context
+include/       CUDA error checking and a GPU timer
+docs/          course explanations in English
+notebooks/     interactive practice notebooks
+exercises/     student tasks
+solutions/     solution guidance
+tests/         structural checks that do not require a GPU
+scripts/       course-track runners
 ```
 
-## כללי נכונות
+## Correctness rules
 
-- כל גישה למערך חייבת להיות בתחום התקין.
-- אחרי kernel launch בודקים שגיאות. בזמן לימוד גם מסתנכרנים.
-- תוצאה נכונה קודמת לאופטימיזציה.
-- `256 threads/block` הוא נקודת פתיחה, לא חוק טבע.
-- reduction שמחלק את מספר המשתתפים ב-2 דורש בדרך כלל block size שהוא חזקה של 2.
-- softmax צריך להיות יציב נומרית: מחסרים את המקסימום לפני `exp`.
+- Every array access must stay within the valid range.
+- Check errors after every kernel launch. While learning, synchronize as well.
+- Correctness comes before optimization.
+- `256 threads/block` is a starting point, not a law.
+- A halving reduction usually requires a power-of-two block size.
+- Softmax must be numerically stable: subtract the maximum before `exp`.
 
-## אימות אמיתי על A100
+## Real validation on A100
 
-השתמשו ב-[A100 run checklist](docs/A100-RUN-CHECKLIST.md), כולל `compute-sanitizer` ו-Nsight Compute.
+Follow the [A100 run checklist](docs/A100-RUN-CHECKLIST.md), including `compute-sanitizer` and Nsight Compute.
 
-## מקורות רשמיים
+## Official references
 
 - [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)
 - [CUDA C++ Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/)
 - [Nsight Compute Documentation](https://docs.nvidia.com/nsight-compute/)
 - [NVIDIA A100](https://www.nvidia.com/en-us/data-center/a100/)
 
-## רישיון
+## License
 
 MIT
