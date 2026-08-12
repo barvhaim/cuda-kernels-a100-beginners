@@ -101,6 +101,9 @@ int main() {
       return 1;
     }
   }
+  std::cout << "LOGITS";
+  for (float value : logits) std::cout << ' ' << value;
+  std::cout << '\n';
   std::cout << "PASS mini_transformer_step: embedding -> residual -> RMSNorm -> logits\n";
   return 0;
 }

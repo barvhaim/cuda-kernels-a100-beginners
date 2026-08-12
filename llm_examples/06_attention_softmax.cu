@@ -1,5 +1,6 @@
 #include "cuda_check.cuh"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -46,12 +47,18 @@ int main() {
   CUDA_CHECK(cudaFree(d_scores));
   CUDA_CHECK(cudaFree(d_probabilities));
 
-  float sum = 0.0f;
-  for (float p : probabilities) {
-    if (!std::isfinite(p)) return 1;
-    sum += p;
+  std::vector<float> expected(n);
+  const float maximum = *std::max_element(scores.begin(), scores.end());
+  float denominator = 0.0f;
+  for (int i = 0; i < n; ++i) {
+    expected[i] = std::exp(scores[i] - maximum);
+    denominator += expected[i];
   }
-  if (std::fabs(sum - 1.0f) > 1e-5f || probabilities[3] <= probabilities[2]) return 1;
+  for (int i = 0; i < n; ++i) {
+    expected[i] /= denominator;
+    if (!std::isfinite(probabilities[i]) || probabilities[i] < 0.0f ||
+        std::fabs(probabilities[i] - expected[i]) > 1e-5f) return 1;
+  }
   std::cout << "PASS attention_softmax: stable probabilities sum to 1\n";
   return 0;
 }

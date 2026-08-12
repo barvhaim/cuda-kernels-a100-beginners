@@ -5,7 +5,11 @@
 #include <vector>
 
 __host__ __device__ float silu_value(float x) {
-  return x / (1.0f + expf(-x));
+  // Stable sigmoid: never evaluate exp(-x) when x is very negative.
+  const float sigmoid =
+      x >= 0.0f ? 1.0f / (1.0f + expf(-x))
+                : expf(x) / (1.0f + expf(x));
+  return x * sigmoid;
 }
 
 // LLM connection: SiLU is commonly used inside gated MLP blocks.
@@ -16,7 +20,7 @@ __global__ void silu(const float* input, float* output, int elements) {
 }
 
 int main() {
-  const std::vector<float> input{-2.0f, -1.0f, 0.0f, 1.0f, 2.0f};
+  const std::vector<float> input{-100.0f, -2.0f, -1.0f, 0.0f, 1.0f, 2.0f};
   std::vector<float> output(input.size());
   const size_t bytes = input.size() * sizeof(float);
   float *d_input = nullptr, *d_output = nullptr;
@@ -30,7 +34,8 @@ int main() {
   CUDA_CHECK(cudaFree(d_output));
 
   for (size_t i = 0; i < input.size(); ++i) {
-    if (std::fabs(output[i] - silu_value(input[i])) > 1e-6f) return 1;
+    if (!std::isfinite(output[i]) ||
+        std::fabs(output[i] - silu_value(input[i])) > 1e-6f) return 1;
   }
   std::cout << "PASS silu_activation: grid-stride loop covered the MLP vector\n";
   return 0;

@@ -68,7 +68,7 @@ output[i] = x[i] * inverse_rms * weight[i]
 0 0 0 0
 ```
 
-`0` פירושו visible, ו-`X` מקבל ערך שלילי גדול לפני softmax.
+`0` פירושו visible, ו-`X` מקבל `-INFINITY`. זוהי additive mask חינוכית ל-FP32: מחברים אותה ל-attention scores לפני softmax, ולכן ההסתברות של future position נעשית 0. ב-production צריך להתאים את ה-sentinel וה-casting ל-dtype ול-kernel בפועל.
 
 ## 6. Stable attention softmax
 

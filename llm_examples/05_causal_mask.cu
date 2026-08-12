@@ -1,5 +1,6 @@
 #include "cuda_check.cuh"
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -8,7 +9,8 @@ __global__ void causal_mask(float* mask, int sequence_length) {
   const int key = blockIdx.x * blockDim.x + threadIdx.x;
   const int query = blockIdx.y * blockDim.y + threadIdx.y;
   if (query < sequence_length && key < sequence_length) {
-    mask[query * sequence_length + key] = key <= query ? 0.0f : -1.0e9f;
+    // Add this FP32 mask to attention scores before softmax.
+    mask[query * sequence_length + key] = key <= query ? 0.0f : -INFINITY;
   }
 }
 
@@ -27,8 +29,10 @@ int main() {
 
   for (int query = 0; query < sequence_length; ++query) {
     for (int key = 0; key < sequence_length; ++key) {
-      const bool visible = mask[query * sequence_length + key] == 0.0f;
-      if (visible != (key <= query)) return 1;
+      const float value = mask[query * sequence_length + key];
+      const bool visible = value == 0.0f;
+      const bool hidden = std::isinf(value) && value < 0.0f;
+      if (key <= query ? !visible : !hidden) return 1;
     }
   }
   std::cout << "PASS causal_mask: future token positions are hidden\n";

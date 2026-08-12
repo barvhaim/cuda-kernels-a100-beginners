@@ -133,6 +133,15 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("scores[tid] - maxima[0]", source)
         self.assertIn("1000.0f", source)
         self.assertIn("std::isfinite", source)
+        self.assertIn("probabilities[i] < 0.0f", source)
+        self.assertIn("probabilities[i] - expected[i]", source)
+
+    def test_silu_and_causal_mask_teach_stable_numerics(self):
+        silu = (ROOT / LLM_EXAMPLES["llm_03_silu_activation"]).read_text()
+        mask = (ROOT / LLM_EXAMPLES["llm_05_causal_mask"]).read_text()
+        self.assertIn("x >= 0.0f", silu)
+        self.assertIn("-100.0f", silu)
+        self.assertIn("-INFINITY", mask)
 
     def test_readme_local_links_exist(self):
         readme = (ROOT / "README.md").read_text()
@@ -191,6 +200,12 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("probabilities =", source)
         for target in LLM_EXAMPLES:
             self.assertIn(target, source)
+        self.assertIn('"A100" in device_zero', source)
+        self.assertIn('"compute capability: 8.0" in device_zero', source)
+        self.assertIn("score + mask[query][key]", source)
+        self.assertIn("probabilities[2:] == [0.0, 0.0]", source)
+        self.assertIn('line.startswith("LOGITS ")', source)
+        self.assertIn("zip(cuda_logits, expected_logits)", source)
 
     def test_ci_is_honest_about_not_building_cuda(self):
         workflow = (ROOT / ".github" / "workflows" / "checks.yml").read_text()
