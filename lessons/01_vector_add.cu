@@ -33,16 +33,18 @@ int main() {
   CUDA_CHECK(cudaGetLastError());
   CUDA_CHECK(cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost));
 
+  bool correct = true;
   for (int i = 0; i < n; ++i) {
     if (std::fabs(c[i] - 4.0f) > 1e-6f) {
       std::cerr << "Mismatch at " << i << '\n';
-      return 1;
+      correct = false;
+      break;
     }
   }
-  std::cout << "PASS vector_add: " << n << " values in " << elapsed_ms << " ms\n";
-
   CUDA_CHECK(cudaFree(d_a));
   CUDA_CHECK(cudaFree(d_b));
   CUDA_CHECK(cudaFree(d_c));
+  if (!correct) return 1;
+  std::cout << "PASS vector_add: " << n << " values in " << elapsed_ms << " ms\n";
   return 0;
 }

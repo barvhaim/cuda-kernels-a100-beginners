@@ -30,6 +30,11 @@ class RepositoryContractTests(unittest.TestCase):
         cmake = (ROOT / "CMakeLists.txt").read_text()
         self.assertRegex(cmake, r"CMAKE_CUDA_ARCHITECTURES\s+80")
 
+    def test_reduction_rejects_non_power_of_two_block_sizes(self):
+        source = (ROOT / "lessons" / "03_reduction.cu").read_text()
+        self.assertIn("static_assert", source)
+        self.assertIn("threads & (threads - 1)", source)
+
     def test_cuda_examples_check_runtime_calls(self):
         for source in (ROOT / "lessons").glob("*.cu"):
             text = source.read_text()
@@ -79,10 +84,38 @@ class RepositoryContractTests(unittest.TestCase):
                     self.assertEqual(cell.get("outputs"), [], filename)
                     self.assertIsNone(cell.get("execution_count"), filename)
 
+    def test_a100_notebooks_find_repo_root_upward(self):
+        import json
+
+        for filename in NOTEBOOKS[1:]:
+            data = json.loads((ROOT / "notebooks" / filename).read_text())
+            source = "".join(
+                "".join(cell["source"])
+                for cell in data["cells"]
+                if cell["cell_type"] == "code"
+            )
+            self.assertIn("for candidate in (start, *start.parents)", source)
+            self.assertIn("raise RuntimeError", source)
+
+    def test_first_a100_notebook_validates_selected_device(self):
+        import json
+
+        data = json.loads((ROOT / "notebooks" / NOTEBOOKS[1]).read_text())
+        source = "".join(
+            "".join(cell["source"])
+            for cell in data["cells"]
+            if cell["cell_type"] == "code"
+        )
+        self.assertIn('["nvidia-smi", "-L"]', source)
+        self.assertIn('"A100" in device.stdout', source)
+        self.assertIn('"compute capability: 8.0"', source)
+        self.assertIn('"00_device_query", "01_vector_add"', source)
+
     def test_docs_do_not_claim_ci_runs_on_a100(self):
-        workflow = (ROOT / ".github" / "workflows" / "docs.yml").read_text()
+        workflow = (ROOT / ".github" / "workflows" / "checks.yml").read_text()
         self.assertNotIn("nvidia-smi", workflow)
         self.assertNotIn("make run", workflow)
+        self.assertIn("CPU-only", workflow)
 
 
 if __name__ == "__main__":

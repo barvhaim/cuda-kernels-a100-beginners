@@ -30,14 +30,17 @@ int main() {
   check_kernel();
   CUDA_CHECK(cudaMemcpy(y.data(), d_y, bytes, cudaMemcpyDeviceToHost));
 
+  bool correct = true;
   for (int i = 0; i < n; ++i) {
     if (std::fabs(y[i] - 7.0f) > 1e-6f) {
       std::cerr << "Mismatch at " << i << '\n';
-      return 1;
+      correct = false;
+      break;
     }
   }
-  std::cout << "PASS grid-stride SAXPY using " << blocks << " blocks\n";
   CUDA_CHECK(cudaFree(d_x));
   CUDA_CHECK(cudaFree(d_y));
+  if (!correct) return 1;
+  std::cout << "PASS grid-stride SAXPY using " << blocks << " blocks\n";
   return 0;
 }

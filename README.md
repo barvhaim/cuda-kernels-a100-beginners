@@ -22,13 +22,14 @@
 - Linux ו-compiler התומך ב-C++17.
 - אין צורך ב-Python packages לבדיקות ה-repo.
 
-ה-A100 הוא GPU מארכיטקטורת Ampere עם compute capability `8.0`, ולכן ברירת המחדל היא `sm_80`.
+ה-A100 הוא GPU מארכיטקטורת Ampere עם compute capability `8.0`, ולכן ברירת המחדל היא `sm_80`. זו מטרת compilation, לא בדיקת זהות בזמן ריצה: במכונה עם כמה GPUs בחרו A100 באמצעות `CUDA_VISIBLE_DEVICES` ואמתו עם `00_device_query`.
 
 ## התחלה מהירה, 10-15 דקות
 
 ```bash
 nvidia-smi
 nvcc --version
+export CUDA_VISIBLE_DEVICES=0  # בחרו כאן את אינדקס ה-A100 מהמכונה
 make build
 ./build/00_device_query
 ./build/01_vector_add

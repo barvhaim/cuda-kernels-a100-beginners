@@ -1,4 +1,4 @@
-name: repository checks
+name: CPU-only structural checks
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  structural-tests:
+  cpu-structural-tests-no-cuda-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

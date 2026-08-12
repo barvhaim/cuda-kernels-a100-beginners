@@ -10,7 +10,13 @@ nvcc --version
 cmake --version
 ```
 
-ודאו שה-device query מדווח compute capability `8.0`.
+במכונה עם כמה GPUs, מצאו את אינדקס ה-A100 ובחרו אותו לפני ההרצה:
+
+```bash
+export CUDA_VISIBLE_DEVICES=<A100-index>
+```
+
+ודאו שה-device query מדווח שם המכיל `A100` ו-compute capability `8.0`. ‏`sm_80` לבדו אינו מוכיח שהחומרה היא A100.
 
 ## Build והרצה
 

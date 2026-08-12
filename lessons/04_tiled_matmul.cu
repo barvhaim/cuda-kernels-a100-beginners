@@ -44,15 +44,18 @@ int main() {
   check_kernel();
   CUDA_CHECK(cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost));
 
+  bool correct = true;
   for (float value : c) {
     if (std::fabs(value - static_cast<float>(n)) > 1e-3f) {
       std::cerr << "Mismatch: expected " << n << ", got " << value << '\n';
-      return 1;
+      correct = false;
+      break;
     }
   }
-  std::cout << "PASS tiled_matmul: " << n << "x" << n << '\n';
   CUDA_CHECK(cudaFree(d_a));
   CUDA_CHECK(cudaFree(d_b));
   CUDA_CHECK(cudaFree(d_c));
+  if (!correct) return 1;
+  std::cout << "PASS tiled_matmul: " << n << "x" << n << '\n';
   return 0;
 }
