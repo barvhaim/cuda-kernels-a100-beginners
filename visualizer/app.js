@@ -18,6 +18,30 @@ const steps = [
 let step = 0;
 let selectedGlobalIdx = 0;
 let simulation;
+let timelineTimer = null;
+let isPlaying = false;
+
+function loadUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  if (["indexing", "bounds", "vector-add", "grid-stride"].includes(params.get("example"))) controls.example.value = params.get("example");
+  if (params.has("blocks")) controls.blocks.value = params.get("blocks");
+  if (params.has("threads")) controls.threadsPerBlock.value = params.get("threads");
+  if (params.has("n")) controls.dataSize.value = params.get("n");
+  step = Math.max(0, Math.min(3, Number(params.get("frame")) || 0));
+  selectedGlobalIdx = Math.max(0, Number(params.get("thread")) || 0);
+}
+
+function syncUrlState() {
+  const params = new URLSearchParams({
+    example: controls.example.value,
+    blocks: controls.blocks.value,
+    threads: controls.threadsPerBlock.value,
+    n: controls.dataSize.value,
+    frame: String(step),
+    thread: String(selectedGlobalIdx),
+  });
+  history.replaceState(null, "", `${window.location.pathname}?${params}`);
+}
 
 function config() {
   return {
@@ -73,14 +97,50 @@ function renderInlineCode() {
 }
 
 function renderStep() {
-  $("#step-number").textContent = `STEP ${step + 1} OF 4`;
+  $("#step-number").textContent = `FRAME ${step + 1} OF 4`;
   $("#step-title").textContent = steps[step][0];
   $("#step-explanation").textContent = steps[step][1];
   $("#pipeline").innerHTML = steps.map(([title], index) =>
-    `<li class="${index === step ? "current" : index < step ? "done" : ""}"><b>${index + 1}</b><span>${title}</span></li>`
+    `<li class="${index === step ? "current" : index < step ? "done" : ""}" data-frame="${index}"><b>${index + 1}</b><span>${title}</span></li>`
   ).join("");
-  $("#play-step").textContent = step === 3 ? "Replay ↻" : "Next →";
+  document.querySelectorAll("[data-frame]").forEach((item) => item.addEventListener("click", () => {
+    stopTimeline();
+    step = Number(item.dataset.frame);
+    renderAll();
+  }));
+  $("#play-step").textContent = step === 3 ? "Replay" : "Next frame";
   $("#previous-step").disabled = step === 0;
+  $("#frame-scrubber").value = step;
+  $("#timeline-time").textContent = `00:0${step + 1} / 00:04`;
+  $("#play-timeline").textContent = isPlaying ? "Ⅱ" : "▶";
+  $("#play-timeline").setAttribute("aria-label", isPlaying ? "Pause timeline" : "Play timeline");
+  document.body.dataset.frame = String(step);
+}
+
+function stopTimeline() {
+  if (timelineTimer) window.clearInterval(timelineTimer);
+  timelineTimer = null;
+  isPlaying = false;
+}
+
+function playTimeline() {
+  if (isPlaying) {
+    stopTimeline();
+    renderAll();
+    return;
+  }
+  if (step === 3) step = 0;
+  isPlaying = true;
+  renderAll();
+  timelineTimer = window.setInterval(() => {
+    if (step === 3) {
+      stopTimeline();
+      renderAll();
+      return;
+    }
+    step += 1;
+    renderAll();
+  }, 1250);
 }
 
 function renderFormula() {
@@ -105,17 +165,19 @@ function renderMapping() {
     return `<article class="mapping-block"><header>BLOCK ${blockIdx}<small>blockDim.x = ${simulation.threadsPerBlock}</small></header><div class="mapping-threads">${threads.map((thread) => {
       const target = thread.indices.length ? thread.indices.map((index) => `A[${index}]`).join(", ") : "outside array";
       const isSelected = thread.globalIdx === selected.globalIdx;
-      return `<button class="mapping-lane ${thread.active ? "active" : "extra"} ${isSelected ? "selected" : ""}" data-thread="${thread.globalIdx}">
-        <span class="lane-thread">T${thread.threadIdx}<small>i=${thread.globalIdx}</small></span>
-        <span class="lane-arrow">${thread.active ? "↓" : "×"}</span>
-        <span class="lane-target">${target}</span>
+      const frameState = step === 0 ? "spawned" : step === 1 ? "indexed" : step === 2 ? (thread.active ? "accepted" : "rejected") : (thread.active ? "committed" : "rejected");
+      return `<button class="mapping-lane ${thread.active ? "active" : "extra"} ${isSelected ? "selected" : ""} ${frameState}" data-thread="${thread.globalIdx}">
+        <span class="lane-thread"><i class="thread-spark"></i>T${thread.threadIdx}<small>${step === 0 ? "ready" : `i=${thread.globalIdx}`}</small></span>
+        <span class="lane-arrow">${step < 2 ? "↓" : thread.active ? "↓" : "×"}</span>
+        <span class="lane-target">${step === 0 ? "waiting" : step === 1 ? `index ${thread.globalIdx}` : target}</span>
       </button>`;
     }).join("")}</div></article>`;
   }).join("");
 
   document.querySelectorAll(".mapping-lane").forEach((button) => button.addEventListener("click", () => {
+    stopTimeline();
     selectedGlobalIdx = Number(button.dataset.thread);
-    renderFormula(); renderMapping(); renderMemory(); renderBlocks(); renderInspector();
+    renderAll();
   }));
 }
 
@@ -199,6 +261,7 @@ function renderInspector() {
 function renderCode() {
   $("#code-view").textContent = simulation.metadata.code.join("\n");
   $("#lesson-link").innerHTML = `Continue in <a href="../${simulation.metadata.lesson}">${simulation.metadata.lesson}</a>.`;
+  $(".cinema-bar > span").textContent = `${simulation.metadata.lesson.split("/").pop()} · execution trace`;
 }
 
 function renderAll() {
@@ -217,15 +280,31 @@ function renderAll() {
   renderBlocks();
   renderInspector();
   renderCode();
+  syncUrlState();
 }
 
 Object.values(controls).forEach((control) => control.addEventListener("input", () => {
+  stopTimeline();
   step = 0;
   selectedGlobalIdx = 0;
   renderAll();
 }));
-$("#play-step").addEventListener("click", () => { step = step === 3 ? 0 : step + 1; renderAll(); });
-$("#previous-step").addEventListener("click", () => { step = Math.max(0, step - 1); renderAll(); });
-$("#reset-step").addEventListener("click", () => { step = 0; selectedGlobalIdx = 0; renderAll(); });
+$("#play-step").addEventListener("click", () => { stopTimeline(); step = step === 3 ? 0 : step + 1; renderAll(); });
+$("#previous-step").addEventListener("click", () => { stopTimeline(); step = Math.max(0, step - 1); renderAll(); });
+$("#reset-step").addEventListener("click", () => { stopTimeline(); step = 0; selectedGlobalIdx = 0; renderAll(); });
+$("#play-timeline").addEventListener("click", playTimeline);
+$("#frame-scrubber").addEventListener("input", (event) => { stopTimeline(); step = Number(event.target.value); renderAll(); });
+$("#copy-lesson-link").addEventListener("click", async () => {
+  syncUrlState();
+  const button = $("#copy-lesson-link");
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    button.textContent = "✓ Link copied";
+  } catch {
+    window.prompt("Copy this lesson link", window.location.href);
+  }
+  window.setTimeout(() => { button.textContent = "⌁ Copy lesson link"; }, 1600);
+});
 
+loadUrlState();
 renderAll();

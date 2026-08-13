@@ -9,9 +9,13 @@
 </head>
 <body>
   <header class="hero compact-hero">
-    <p class="eyebrow">CUDA · VISUAL LAB</p>
-    <h1>How does a CUDA thread<br><span>choose its data?</span></h1>
-    <p>Every thread calculates one global index. Valid indices point to array items; extra threads do nothing.</p>
+    <div class="hero-orbit" aria-hidden="true"><i></i><i></i><i></i><span>CUDA</span></div>
+    <div class="hero-copy">
+      <p class="eyebrow">CUDA · FRAME BY FRAME</p>
+      <h1>Watch parallel code<br><span>come alive.</span></h1>
+      <p>Scrub through a real CUDA idea. See every thread, the exact code it runs, and the data it touches — perfectly synchronized.</p>
+      <div class="hero-actions"><a href="#story-canvas" class="hero-button">▶ Run the lesson</a><a href="https://github.com/barvhaim/cuda-kernels-a100-beginners" class="ghost-link">View source ↗</a></div>
+    </div>
   </header>
 
   <main>
@@ -22,27 +26,42 @@
         <p id="launch-consequence">Two extra threads fall outside the array and do no work.</p>
       </div>
 
-      <div class="mapping-head">
-        <div><span class="step-label" id="step-number">STEP 1 OF 4</span><h2 id="step-title">Launch the threads</h2><p id="step-explanation" aria-live="polite"></p></div>
-        <div class="step-controls"><button id="previous-step" type="button">← Back</button><button id="play-step" class="primary" type="button">Next →</button><button id="reset-step" type="button">Restart</button></div>
-      </div>
-      <ol class="pipeline four-steps" id="pipeline" aria-label="Four indexing steps"></ol>
+      <div class="cinema-stage">
+        <div class="cinema-bar">
+          <div class="window-dots"><i></i><i></i><i></i></div>
+          <span>bounds_check.cu · execution trace</span>
+          <div class="cinema-actions"><button id="copy-lesson-link" type="button">⌁ Copy lesson link</button></div>
+        </div>
+        <div class="mapping-head">
+          <div><span class="step-label" id="step-number">FRAME 1 OF 4</span><h2 id="step-title">Launch the threads</h2><p id="step-explanation" aria-live="polite"></p></div>
+        </div>
+        <ol class="pipeline four-steps" id="pipeline" aria-label="Four indexing frames"></ol>
 
-      <div class="lesson-columns">
+        <div class="lesson-columns">
         <div id="mapping-view" class="mapping-view" aria-label="Thread to array mapping"></div>
         <aside class="inline-code-panel" aria-labelledby="inline-code-title">
           <div class="code-panel-head"><span class="step-label">LIVE CODE</span><h3 id="inline-code-title">Code running beside the picture</h3></div>
           <div id="inline-code" class="inline-code" aria-live="polite"></div>
           <p id="code-explanation" class="code-explanation"></p>
         </aside>
-      </div>
+        </div>
 
-      <div class="selected-calculation">
-        <span>SELECTED THREAD</span>
-        <div id="selected-plain"></div>
-        <code>globalIdx = blockIdx.x * blockDim.x + threadIdx.x</code>
-        <strong id="formula-example"></strong>
-        <p id="bounds-result"></p>
+        <div class="selected-calculation">
+          <span>SELECTED THREAD</span>
+          <div id="selected-plain"></div>
+          <code>globalIdx = blockIdx.x * blockDim.x + threadIdx.x</code>
+          <strong id="formula-example"></strong>
+          <p id="bounds-result"></p>
+        </div>
+
+        <div class="timeline-deck">
+          <button id="previous-step" type="button" aria-label="Previous frame">←</button>
+          <button id="play-timeline" class="play-button" type="button" aria-label="Play timeline">▶</button>
+          <input id="frame-scrubber" type="range" min="0" max="3" value="0" step="1" aria-label="Execution frame">
+          <span id="timeline-time">00:00 / 00:04</span>
+          <button id="play-step" type="button">Next frame</button>
+          <button id="reset-step" type="button">↻</button>
+        </div>
       </div>
     </section>
 
