@@ -30,6 +30,34 @@ function currentConfig() {
   };
 }
 
+function renderExecutionMap() {
+  const state = stageState(simulation, step);
+  const thread = simulation.threads[selectedGlobalIdx] || simulation.threads[0];
+  const work = thread.indices.length ? thread.indices.map((index) => `[${index}]`).join(" ") : "no element";
+  const flowClass = (from, to) => step >= from && step <= to ? "flow active-flow" : "flow";
+  const gpuClass = state.deviceReady ? "machine gpu awake" : "machine gpu";
+  const kernelClass = state.gridVisible ? "map-kernel awake" : "map-kernel";
+  const threadClass = state.gridVisible ? `map-thread awake ${state.executed ? "executing" : ""}` : "map-thread";
+
+  $("#machine-map").innerHTML = `
+    <div class="machine cpu-machine">
+      <div class="machine-icon">CPU</div><strong>Host memory</strong>
+      <div class="mini-memory"><i>A</i>${simulation.example === "vector-add" ? "<i>B</i>" : ""}<i class="result-mini">C</i></div>
+    </div>
+    <div class="${flowClass(1, 1)}"><span>cudaMemcpy H→D</span><b>→</b></div>
+    <div class="${gpuClass}">
+      <div class="machine-icon">GPU</div><strong>Device memory</strong>
+      <div class="mini-memory"><i>A</i>${simulation.example === "vector-add" ? "<i>B</i>" : ""}<i class="result-mini ${state.executed ? "filled" : ""}">C</i></div>
+    </div>
+    <div class="${flowClass(2, 3)}"><span>kernel launch</span><b>→</b></div>
+    <div class="${kernelClass}">
+      <small>GRID</small><strong>${simulation.blocks} blocks</strong>
+      <div class="map-blocks">${Array.from({ length: simulation.blocks }, (_, i) => `<i class="${i === thread.blockIdx ? "chosen" : ""}">B${i}</i>`).join("")}</div>
+      <div class="${threadClass}"><span>T${thread.threadIdx}</span><b>i=${thread.globalIdx}</b><em>${work}</em></div>
+    </div>
+    <div class="${flowClass(4, 4)} reverse"><span>cudaMemcpy D→H</span><b>←</b></div>`;
+}
+
 function renderPipeline() {
   const state = stageState(simulation, step);
   const labels = ["CPU inputs", "Device inputs", "Kernel launch", "Thread work", "CPU result"];
@@ -70,6 +98,8 @@ function renderBlocks() {
       selectedGlobalIdx = Number(button.dataset.thread);
       renderBlocks();
       renderInspector();
+      renderExecutionMap();
+      renderMemory();
     });
   });
 }
@@ -86,9 +116,11 @@ function renderInspector() {
 }
 
 function cells(values, visible, result = false) {
+  const thread = simulation.threads[selectedGlobalIdx] || simulation.threads[0];
   return `<div class="cells">${values.map((value, index) => {
     const shown = visible && value !== null;
-    return `<div class="cell ${shown && result ? "result" : ""} ${shown ? "" : "pending"}" data-index="${index}">${shown ? value : "·"}</div>`;
+    const touched = thread.indices.includes(index);
+    return `<div class="cell ${shown && result ? "result" : ""} ${shown ? "" : "pending"} ${touched ? "thread-target" : ""}" data-index="${index}">${shown ? value : "·"}</div>`;
   }).join("")}</div>`;
 }
 
@@ -123,6 +155,7 @@ function render() {
   renderStats();
   renderBlocks();
   renderInspector();
+  renderExecutionMap();
   renderMemory();
   renderCode();
 }
@@ -136,17 +169,20 @@ Object.values(controls).forEach((control) => control.addEventListener("input", (
 $("#play-step").addEventListener("click", () => {
   step = step === 4 ? 0 : step + 1;
   renderPipeline();
+  renderExecutionMap();
   renderMemory();
 });
 $("#previous-step").addEventListener("click", () => {
   step = Math.max(0, step - 1);
   renderPipeline();
+  renderExecutionMap();
   renderMemory();
 });
 $("#reset-step").addEventListener("click", () => {
   clearInterval(playTimer);
   step = 0;
   renderPipeline();
+  renderExecutionMap();
   renderMemory();
 });
 

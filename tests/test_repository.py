@@ -238,7 +238,7 @@ class RepositoryContractTests(unittest.TestCase):
         emulator = (visualizer / "emulator.js").read_text()
         readme = (ROOT / "README.md").read_text()
 
-        for concept in ("Grid", "Blocks", "Threads", "Warps", "Memory journey"):
+        for concept in ("Grid", "Blocks", "Threads", "Warps", "Memory journey", "CPU → GPU execution map"):
             self.assertIn(concept, html)
         for example in ("indexing", "bounds", "vector-add", "grid-stride"):
             self.assertIn(f'value="{example}"', html)
@@ -249,6 +249,9 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("DEVICE · input A", app)
         self.assertIn("DEVICE · input B", app)
         self.assertIn("DEVICE · output C", app)
+        self.assertIn("renderExecutionMap", app)
+        self.assertIn("thread-target", app)
+        self.assertIn("cudaMemcpy H→D", app)
         self.assertIn("export function createSimulation", emulator)
         self.assertIn("visualizer/index.html", readme)
         self.assertNotIn("http://", html)
