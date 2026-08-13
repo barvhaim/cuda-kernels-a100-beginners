@@ -9,11 +9,10 @@ const controls = {
 };
 
 const steps = [
-  ["CPU creates the data", "The arrays begin in normal CPU memory."],
-  ["Copy inputs to the GPU", "cudaMemcpy makes device copies of the input arrays."],
-  ["Launch the CUDA grid", "The launch creates blocks. Each block contains threads."],
-  ["Each thread does one job", "The selected thread computes its global index, checks the boundary, and updates its item."],
-  ["Copy the answer to the CPU", "The completed output returns to CPU memory for checking or display."],
+  ["Launch", "CUDA creates all logical threads in the blocks below."],
+  ["Index", "Every thread calculates its own global index."],
+  ["Check", "A thread works only when its index is smaller than the array length."],
+  ["Update", "Active threads map to array items. Extra threads stop at the boundary."],
 ];
 
 let step = 0;
@@ -34,19 +33,50 @@ function selectedThread() {
 }
 
 function renderStep() {
-  $("#step-number").textContent = `STEP ${step + 1} OF 5`;
+  $("#step-number").textContent = `STEP ${step + 1} OF 4`;
   $("#step-title").textContent = steps[step][0];
   $("#step-explanation").textContent = steps[step][1];
   $("#pipeline").innerHTML = steps.map(([title], index) =>
     `<li class="${index === step ? "current" : index < step ? "done" : ""}"><b>${index + 1}</b><span>${title}</span></li>`
   ).join("");
-  $("#play-step").textContent = step === 4 ? "Replay ↻" : "Next →";
+  $("#play-step").textContent = step === 3 ? "Replay ↻" : "Next →";
   $("#previous-step").disabled = step === 0;
 }
 
 function renderFormula() {
   const thread = selectedThread();
-  $("#formula-example").textContent = `${thread.blockIdx} × ${simulation.threadsPerBlock} + ${thread.threadIdx} = ${thread.globalIdx}`;
+  const valid = thread.globalIdx < simulation.dataSize;
+  $("#selected-plain").textContent = `Block ${thread.blockIdx}, Thread ${thread.threadIdx}`;
+  $("#formula-example").textContent = `(${thread.blockIdx} × ${simulation.threadsPerBlock}) + ${thread.threadIdx} = ${thread.globalIdx}`;
+  $("#bounds-result").innerHTML = valid
+    ? `<b>${thread.globalIdx} &lt; ${simulation.dataSize}</b> → valid → works on item ${thread.globalIdx}`
+    : `<b>${thread.globalIdx} &lt; ${simulation.dataSize}</b> → false → does nothing`;
+}
+
+function renderMapping() {
+  const selected = selectedThread();
+  $("#launch-summary").textContent = `${simulation.blocks} blocks × ${simulation.threadsPerBlock} threads = ${simulation.launchedThreads} threads for ${simulation.dataSize} items`;
+  $("#launch-consequence").textContent = simulation.extraThreads
+    ? `${simulation.extraThreads} extra thread${simulation.extraThreads === 1 ? "" : "s"} fall outside the array and do no work.`
+    : "Every launched thread maps to data in this example.";
+
+  $("#mapping-view").innerHTML = Array.from({ length: simulation.blocks }, (_, blockIdx) => {
+    const threads = simulation.threads.filter((thread) => thread.blockIdx === blockIdx);
+    return `<article class="mapping-block"><header>BLOCK ${blockIdx}<small>blockDim.x = ${simulation.threadsPerBlock}</small></header><div class="mapping-threads">${threads.map((thread) => {
+      const target = thread.indices.length ? thread.indices.map((index) => `A[${index}]`).join(", ") : "outside array";
+      const isSelected = thread.globalIdx === selected.globalIdx;
+      return `<button class="mapping-lane ${thread.active ? "active" : "extra"} ${isSelected ? "selected" : ""}" data-thread="${thread.globalIdx}">
+        <span class="lane-thread">T${thread.threadIdx}<small>i=${thread.globalIdx}</small></span>
+        <span class="lane-arrow">${thread.active ? "↓" : "×"}</span>
+        <span class="lane-target">${target}</span>
+      </button>`;
+    }).join("")}</div></article>`;
+  }).join("");
+
+  document.querySelectorAll(".mapping-lane").forEach((button) => button.addEventListener("click", () => {
+    selectedGlobalIdx = Number(button.dataset.thread);
+    renderFormula(); renderMapping(); renderMemory(); renderBlocks(); renderInspector();
+  }));
 }
 
 function renderExecutionMap() {
@@ -138,6 +168,7 @@ function renderAll() {
   $("#threads-value").textContent = simulation.threadsPerBlock;
   $("#data-value").textContent = simulation.dataSize;
   renderStep();
+  renderMapping();
   renderFormula();
   renderExecutionMap();
   renderMemory();
@@ -152,7 +183,7 @@ Object.values(controls).forEach((control) => control.addEventListener("input", (
   selectedGlobalIdx = 0;
   renderAll();
 }));
-$("#play-step").addEventListener("click", () => { step = step === 4 ? 0 : step + 1; renderAll(); });
+$("#play-step").addEventListener("click", () => { step = step === 3 ? 0 : step + 1; renderAll(); });
 $("#previous-step").addEventListener("click", () => { step = Math.max(0, step - 1); renderAll(); });
 $("#reset-step").addEventListener("click", () => { step = 0; selectedGlobalIdx = 0; renderAll(); });
 

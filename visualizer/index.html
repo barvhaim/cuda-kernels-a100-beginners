@@ -3,90 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A CPU-only visual guide to CUDA indexing, bounds checks, and memory movement.">
+  <meta name="description" content="A CPU-only visual guide to CUDA indexing and bounds checks.">
   <title>CUDA Thread Visualizer</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="hero">
+  <header class="hero compact-hero">
     <p class="eyebrow">CUDA · VISUAL LAB</p>
-    <h1>One thread,<br><span>one job.</span></h1>
-    <p>Follow one CUDA thread from its block to the exact array element it changes.</p>
+    <h1>How does a CUDA thread<br><span>choose its data?</span></h1>
+    <p>Every thread calculates one global index. Valid indices point to array items; extra threads do nothing.</p>
   </header>
 
   <main>
-    <section class="controls" aria-labelledby="controls-title">
-      <div><span class="step-label">SETUP</span><h2 id="controls-title">Choose a tiny launch</h2></div>
-      <label>Example
-        <select id="example">
-          <option value="indexing">Global indexing</option>
-          <option value="bounds" selected>Bounds check</option>
-          <option value="vector-add">Vector addition</option>
-          <option value="grid-stride">Grid-stride loop</option>
-        </select>
-      </label>
-      <label>Blocks <output id="blocks-value">2</output><input id="blocks" type="range" min="1" max="8" value="2"></label>
-      <label>Threads / block <output id="threads-value">4</output><input id="threads" type="range" min="1" max="16" value="4"></label>
-      <label>Data items <output id="data-value">6</output><input id="data-size" type="range" min="1" max="48" value="6"></label>
-    </section>
-
     <section id="story-canvas" class="story-canvas" aria-labelledby="step-title">
-      <div class="story-top">
-        <div>
-          <span class="step-label" id="step-number">STEP 1 OF 5</span>
-          <h2 id="step-title">CPU creates the data</h2>
-          <p id="step-explanation" aria-live="polite"></p>
-        </div>
-        <div class="step-controls">
-          <button id="previous-step" type="button" aria-label="Previous step">← Back</button>
-          <button id="play-step" class="primary" type="button">Next →</button>
-          <button id="reset-step" type="button">Restart</button>
-        </div>
+      <div class="lesson-summary">
+        <span class="step-label">THE WHOLE IDEA</span>
+        <h2 id="launch-summary">2 blocks × 4 threads = 8 threads for 6 items</h2>
+        <p id="launch-consequence">Two extra threads fall outside the array and do no work.</p>
       </div>
 
-      <ol class="pipeline" id="pipeline" aria-label="Five execution steps"></ol>
+      <div class="mapping-head">
+        <div><span class="step-label" id="step-number">STEP 1 OF 4</span><h2 id="step-title">Launch the threads</h2><p id="step-explanation" aria-live="polite"></p></div>
+        <div class="step-controls"><button id="previous-step" type="button">← Back</button><button id="play-step" class="primary" type="button">Next →</button><button id="reset-step" type="button">Restart</button></div>
+      </div>
+      <ol class="pipeline four-steps" id="pipeline" aria-label="Four indexing steps"></ol>
 
-      <div class="big-formula">
-        <span>Which item does the selected thread own?</span>
+      <div id="mapping-view" class="mapping-view" aria-label="Thread to array mapping"></div>
+
+      <div class="selected-calculation">
+        <span>SELECTED THREAD</span>
+        <div id="selected-plain"></div>
         <code>globalIdx = blockIdx.x * blockDim.x + threadIdx.x</code>
         <strong id="formula-example"></strong>
-      </div>
-
-      <h3>CPU → GPU execution map</h3>
-      <div class="machine-map" id="machine-map" aria-live="polite"></div>
-
-      <div class="memory-story">
-        <h3>Watch the selected item</h3>
-        <p class="hint">Orange means: “this is the item owned by the selected thread.”</p>
-        <div id="memory-view"></div>
+        <p id="bounds-result"></p>
       </div>
     </section>
 
+    <details class="details-panel launch-details">
+      <summary>Try changing the launch</summary>
+      <section class="controls" aria-labelledby="controls-title">
+        <div><span class="step-label">EXPERIMENT</span><h2 id="controls-title">Change one number</h2></div>
+        <label>Example<select id="example"><option value="indexing">Global indexing</option><option value="bounds" selected>Bounds check</option><option value="vector-add">Vector addition</option><option value="grid-stride">Grid-stride loop</option></select></label>
+        <label>Blocks <output id="blocks-value">2</output><input id="blocks" type="range" min="1" max="8" value="2"></label>
+        <label>Threads / block <output id="threads-value">4</output><input id="threads" type="range" min="1" max="16" value="4"></label>
+        <label>Array length <output id="data-value">6</output><input id="data-size" type="range" min="1" max="48" value="6"></label>
+      </section>
+    </details>
+
     <details class="details-panel">
-      <summary>Show details: all blocks and threads</summary>
-      <div class="details-body">
-        <div class="details-heading">
-          <div><span class="step-label">EXPLORE</span><h2>Click a different thread</h2></div>
-          <div class="legend"><span class="dot active"></span>does work <span class="dot idle"></span>extra</div>
-        </div>
-        <div class="stats" id="stats"></div>
-        <div class="blocks" id="blocks-view"></div>
-        <aside class="inspector" id="inspector"><p>Select a thread to inspect it.</p></aside>
-      </div>
+      <summary>How the arrays reach the GPU</summary>
+      <div class="details-body"><h2>CPU → GPU execution map</h2><div class="machine-map" id="machine-map"></div><div id="memory-view"></div></div>
     </details>
 
-    <details class="details-panel code-details">
+    <details class="details-panel">
+      <summary>Show details: thread cards</summary>
+      <div class="details-body"><div class="stats" id="stats"></div><div class="blocks" id="blocks-view"></div><aside class="inspector" id="inspector"></aside></div>
+    </details>
+
+    <details class="details-panel">
       <summary>Show the matching CUDA code</summary>
-      <div class="details-body">
-        <pre><code id="code-view"></code></pre>
-        <p id="lesson-link" class="lesson-link"></p>
-      </div>
+      <div class="details-body"><pre><code id="code-view"></code></pre><p id="lesson-link" class="lesson-link"></p></div>
     </details>
 
-    <aside class="truth-note"><strong>CPU execution-model emulator, not a performance simulator.</strong> This teaching model runs on your CPU and explains CUDA indexing and memory movement. It does not reproduce A100 timing, caches, or scheduling.</aside>
+    <aside class="truth-note"><strong>CPU execution-model emulator, not a performance simulator.</strong> It explains indexing and memory movement, not A100 timing, caches, or scheduling.</aside>
   </main>
-
-  <footer>No GPU, CUDA toolkit, account, analytics, or network requests required.</footer>
+  <footer>No GPU or CUDA toolkit required.</footer>
   <script type="module" src="app.js"></script>
 </body>
 </html>
