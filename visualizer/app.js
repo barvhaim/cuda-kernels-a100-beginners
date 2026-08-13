@@ -32,6 +32,46 @@ function selectedThread() {
   return simulation.threads[selectedGlobalIdx] || simulation.threads[0];
 }
 
+function inlineCodeLines() {
+  const work = {
+    indexing: 'printf("global=%d\\n", i);',
+    bounds: "data[i] = data[i];",
+    "vector-add": "c[i] = a[i] + b[i];",
+    "grid-stride": "output[i] = input[i] * 2;",
+  }[simulation.example];
+  if (simulation.example === "grid-stride") {
+    return [
+      `kernel<<<${simulation.blocks}, ${simulation.threadsPerBlock}>>>();`,
+      "int i = blockIdx.x * blockDim.x + threadIdx.x;",
+      "for (; i < n; i += blockDim.x * gridDim.x) {",
+      `  ${work}`,
+      "}",
+    ];
+  }
+  return [
+    `kernel<<<${simulation.blocks}, ${simulation.threadsPerBlock}>>>();`,
+    "int i = blockIdx.x * blockDim.x + threadIdx.x;",
+    "if (i < n) {",
+    `  ${work}`,
+    "}",
+  ];
+}
+
+function renderInlineCode() {
+  const activeLine = [0, 1, 2, 3][step];
+  const explanations = [
+    "The launch syntax creates the blocks and threads shown on the left.",
+    "Every thread runs this same line, but its blockIdx and threadIdx are different.",
+    "The boundary check prevents indices outside the array from accessing memory.",
+    "Only a valid thread reaches the work line and updates its mapped item.",
+  ];
+  $("#inline-code").innerHTML = inlineCodeLines().map((line, index) => {
+    const escaped = line.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    return `<div class="code-line ${index === activeLine ? "current" : ""}"><span>${index + 1}</span><code>${escaped}</code></div>`;
+  }).join("");
+  $("#code-explanation").textContent = explanations[step];
+}
+
 function renderStep() {
   $("#step-number").textContent = `STEP ${step + 1} OF 4`;
   $("#step-title").textContent = steps[step][0];
@@ -168,6 +208,7 @@ function renderAll() {
   $("#threads-value").textContent = simulation.threadsPerBlock;
   $("#data-value").textContent = simulation.dataSize;
   renderStep();
+  renderInlineCode();
   renderMapping();
   renderFormula();
   renderExecutionMap();
