@@ -1,6 +1,24 @@
 # CUDA Kernels for Beginners on NVIDIA A100
 
+> **CUDA, frame by frame.** Watch every thread, source line, bounds check, and array update move in sync before running the same idea on an A100.
+
+[![Open the interactive visualizer](https://img.shields.io/badge/OPEN_INTERACTIVE_VISUALIZER-B8FF38?style=for-the-badge&logo=nvidia&logoColor=111111)](https://barvhaim.github.io/cuda-kernels-a100-beginners/)
+[![CPU-only checks](https://github.com/barvhaim/cuda-kernels-a100-beginners/actions/workflows/checks.yml/badge.svg)](https://github.com/barvhaim/cuda-kernels-a100-beginners/actions/workflows/checks.yml)
+
+**No GPU for the first lesson. No black-box magic.** Start in the browser, scrub through execution, then continue into real CUDA kernels, notebooks, LLM building blocks, and A100 profiling.
+
 A practical English course that starts with one kernel and one thread, then progresses to LLM building blocks such as embeddings, residual connections, RMSNorm, attention softmax, and linear projections.
+
+## See the kernel execute
+
+The browser visualizer is the fastest way into the course:
+
+- Press **Play** or scrub through Launch → Index → Check → Update.
+- Watch the highlighted CUDA line stay synchronized with every thread.
+- Select an extra thread and see the bounds check reject it.
+- Change the launch, switch to Vector Add, and share the exact frame with a URL.
+
+**[Launch CUDA Frame by Frame →](https://barvhaim.github.io/cuda-kernels-a100-beginners/)**
 
 ## Who is this course for?
 
@@ -48,7 +66,7 @@ If you learn best by seeing the execution model, open the [interactive CPU visua
 
 The visualizer runs entirely in the browser and requires no CUDA toolkit or GPU. It emulates the logical indexing and memory journey taught in this course. It is not an A100 performance, scheduling, cache, or timing simulator.
 
-Once GitHub Pages is enabled for this repository, the hosted version is available at:
+The hosted visualizer is live at:
 
 - `https://barvhaim.github.io/cuda-kernels-a100-beginners/`
 
