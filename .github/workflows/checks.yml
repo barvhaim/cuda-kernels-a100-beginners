@@ -17,3 +17,5 @@ jobs:
           python-version: "3.12"
       - name: Run CPU-only repository checks
         run: python -m unittest discover -s tests -v
+      - name: Test the CPU execution-model emulator
+        run: node tests/test_emulator.mjs

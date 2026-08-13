@@ -42,6 +42,23 @@ export CUDA_VISIBLE_DEVICES=0  # Replace with the index of your A100
 make build
 ```
 
+## CPU visualizer: no GPU required
+
+If you learn best by seeing the execution model, open the [interactive CPU visualizer](visualizer/index.html). It lets you change the grid, blocks, threads per block, and data size, then follow indexing, bounds checks, vector addition, and grid-stride loops step by step.
+
+The visualizer runs entirely in the browser and requires no CUDA toolkit or GPU. It emulates the logical indexing and memory journey taught in this course. It is not an A100 performance, scheduling, cache, or timing simulator.
+
+Once GitHub Pages is enabled for this repository, the hosted version is available at:
+
+- `https://barvhaim.github.io/cuda-kernels-a100-beginners/`
+
+To run it locally:
+
+```bash
+python3 -m http.server 8000
+# Open http://localhost:8000/visualizer/
+```
+
 ## Track 1: Complete beginners
 
 Start with [CUDA Foundations, Step by Step](docs/00-cuda-foundations.md), then run each example separately:
@@ -125,6 +142,7 @@ llm_examples/  educational kernels in an LLM context
 include/       CUDA error checking and a GPU timer
 docs/          course explanations in English
 notebooks/     interactive practice notebooks
+visualizer/    CPU-only CUDA execution-model visualizer
 exercises/     student tasks
 solutions/     solution guidance
 tests/         structural checks that do not require a GPU

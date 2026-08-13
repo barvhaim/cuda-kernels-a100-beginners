@@ -227,6 +227,34 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn('line.startswith("LOGITS ")', source)
         self.assertIn("zip(cuda_logits, expected_logits)", source)
 
+    def test_cpu_visualizer_is_a_zero_dependency_learning_path(self):
+        visualizer = ROOT / "visualizer"
+        expected_files = ("index.html", "styles.css", "app.js", "emulator.js")
+        for filename in expected_files:
+            self.assertTrue((visualizer / filename).is_file(), filename)
+
+        html = (visualizer / "index.html").read_text()
+        app = (visualizer / "app.js").read_text()
+        emulator = (visualizer / "emulator.js").read_text()
+        readme = (ROOT / "README.md").read_text()
+
+        for concept in ("Grid", "Blocks", "Threads", "Warps", "Memory journey"):
+            self.assertIn(concept, html)
+        for example in ("indexing", "bounds", "vector-add", "grid-stride"):
+            self.assertIn(f'value="{example}"', html)
+        self.assertIn("blockIdx.x * blockDim.x + threadIdx.x", html)
+        self.assertIn("CPU execution-model emulator", html)
+        self.assertIn("not a performance simulator", html)
+        self.assertIn("createSimulation", app)
+        self.assertIn("export function createSimulation", emulator)
+        self.assertIn("visualizer/index.html", readme)
+        self.assertNotIn("http://", html)
+        self.assertNotIn("https://", html)
+
+        pages_entry = (ROOT / "index.html").read_text()
+        self.assertIn('url=visualizer/', pages_entry)
+        self.assertIn('href="visualizer/"', pages_entry)
+
     def test_ci_is_honest_about_not_building_cuda(self):
         workflow = (ROOT / ".github" / "workflows" / "checks.yml").read_text()
         self.assertNotIn("nvidia-smi", workflow)

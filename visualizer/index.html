@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A CPU-only visual guide to CUDA indexing, bounds checks, and memory movement.">
+  <title>CUDA Execution Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">CUDA KERNELS · VISUAL LAB</p>
+      <h1>See every thread<br><span>before you run it.</span></h1>
+      <p class="lede">A CPU execution-model emulator for learning how a CUDA Grid becomes Blocks, Threads, indices, and array updates.</p>
+    </div>
+    <div class="truth-card">
+      <strong>What this is</strong>
+      <p>A deterministic teaching model that mirrors the indexing math in this course.</p>
+      <strong>What this is not</strong>
+      <p>It is not a performance simulator for A100 scheduling, caches, latency, or timing.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="control-panel" aria-labelledby="controls-title">
+      <div>
+        <p class="section-kicker">01 · Configure the launch</p>
+        <h2 id="controls-title">Kernel launch</h2>
+      </div>
+      <label>Example
+        <select id="example">
+          <option value="indexing">Global indexing</option>
+          <option value="bounds" selected>Bounds check</option>
+          <option value="vector-add">Vector addition</option>
+          <option value="grid-stride">Grid-stride loop</option>
+        </select>
+      </label>
+      <label>Blocks <output id="blocks-value">2</output>
+        <input id="blocks" type="range" min="1" max="8" value="2">
+      </label>
+      <label>Threads / block <output id="threads-value">4</output>
+        <input id="threads" type="range" min="1" max="16" value="4">
+      </label>
+      <label>Data elements <output id="data-value">6</output>
+        <input id="data-size" type="range" min="1" max="48" value="6">
+      </label>
+    </section>
+
+    <section class="formula-strip" aria-label="CUDA indexing formula">
+      <span>globalIdx =</span><code>blockIdx.x * blockDim.x + threadIdx.x</code>
+      <div id="formula-example" class="formula-example"></div>
+    </section>
+
+    <section class="journey" aria-labelledby="journey-title">
+      <div class="section-heading">
+        <div><p class="section-kicker">02 · Follow the data</p><h2 id="journey-title">Memory journey</h2></div>
+        <div class="step-controls">
+          <button id="previous-step" type="button" aria-label="Previous step">←</button>
+          <button id="play-step" class="primary" type="button">Next step</button>
+          <button id="reset-step" type="button">Reset</button>
+        </div>
+      </div>
+      <ol class="pipeline" id="pipeline"></ol>
+      <div class="step-explanation" id="step-explanation" aria-live="polite"></div>
+    </section>
+
+    <section class="grid-section" aria-labelledby="grid-title">
+      <div class="section-heading">
+        <div><p class="section-kicker">03 · Inspect the launch</p><h2 id="grid-title">Grid → Blocks → Threads → Warps</h2></div>
+        <div class="legend"><span class="dot active"></span>works on data <span class="dot idle"></span>extra thread</div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="blocks" id="blocks-view"></div>
+      <aside class="inspector" id="inspector" aria-live="polite">
+        <p>Select a thread to inspect its identifiers and work.</p>
+      </aside>
+    </section>
+
+    <section class="memory-section" aria-labelledby="memory-title">
+      <div class="section-heading">
+        <div><p class="section-kicker">04 · See the arrays change</p><h2 id="memory-title">Memory</h2></div>
+      </div>
+      <div id="memory-view"></div>
+    </section>
+
+    <section class="code-section" aria-labelledby="code-title">
+      <div><p class="section-kicker">05 · Connect picture to code</p><h2 id="code-title">The matching CUDA idea</h2></div>
+      <pre><code id="code-view"></code></pre>
+      <p id="lesson-link" class="lesson-link"></p>
+    </section>
+  </main>
+
+  <footer>Runs entirely on your CPU and in your browser. No CUDA toolkit, GPU, account, analytics, or network requests.</footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
