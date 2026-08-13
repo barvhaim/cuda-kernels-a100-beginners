@@ -12,6 +12,10 @@ const vector = createSimulation({ example: "vector-add", blocks: 2, threadsPerBl
 assert.deepEqual(vector.output, [11, 22, 33, 44, 55]);
 assert.equal(vector.extraThreads, 1);
 
+const residual = createSimulation({ example: "residual-add", blocks: 2, threadsPerBlock: 3, dataSize: 5 });
+assert.deepEqual(residual.output, [11, 22, 33, 44, 55]);
+assert.equal(residual.metadata.lesson, "llm_examples/02_residual_add.cu");
+
 const stride = createSimulation({ example: "grid-stride", blocks: 1, threadsPerBlock: 3, dataSize: 8 });
 assert.deepEqual(stride.threads[0].indices, [0, 3, 6]);
 assert.deepEqual(stride.threads[1].indices, [1, 4, 7]);
@@ -19,7 +23,7 @@ assert.deepEqual(stride.threads[2].indices, [2, 5]);
 assert.deepEqual(stride.output, [2, 4, 6, 8, 10, 12, 14, 16]);
 
 assert.deepEqual(normalizeConfig({ blocks: 99, threadsPerBlock: 0, dataSize: -4 }), {
-  example: "bounds",
+  example: "residual-add",
   blocks: 8,
   threadsPerBlock: 1,
   dataSize: 1,

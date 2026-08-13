@@ -11,9 +11,9 @@
   <header class="hero compact-hero">
     <div class="hero-orbit" aria-hidden="true"><i></i><i></i><i></i><span>CUDA</span></div>
     <div class="hero-copy">
-      <p class="eyebrow">CUDA · FRAME BY FRAME</p>
-      <h1>Watch parallel code<br><span>come alive.</span></h1>
-      <p>Scrub through a real CUDA idea. See every thread, the exact code it runs, and the data it touches — perfectly synchronized.</p>
+      <p class="eyebrow">CUDA INSIDE AN LLM · FRAME BY FRAME</p>
+      <h1>See what the GPU does<br><span>inside an LLM.</span></h1>
+      <p>Follow one token through the CUDA building blocks behind embeddings, residual streams, normalization, attention, projections, and logits.</p>
       <div class="hero-actions"><a href="#story-canvas" class="hero-button">▶ Run the lesson</a><a href="https://github.com/barvhaim/cuda-kernels-a100-beginners" class="ghost-link">View source ↗</a></div>
     </div>
   </header>
@@ -21,9 +21,9 @@
   <main>
     <section id="story-canvas" class="story-canvas" aria-labelledby="step-title">
       <div class="lesson-summary">
-        <span class="step-label">THE WHOLE IDEA</span>
-        <h2 id="launch-summary">2 blocks × 4 threads = 8 threads for 6 items</h2>
-        <p id="launch-consequence">Two extra threads fall outside the array and do no work.</p>
+        <span class="step-label">THE LLM IDEA</span>
+        <h2 id="launch-summary">Residual stream: 8 CUDA threads update 6 hidden dimensions</h2>
+        <p id="launch-consequence">Each valid thread adds one layer output value back into the token's hidden state.</p>
       </div>
 
       <div class="cinema-stage">
@@ -65,11 +65,38 @@
       </div>
     </section>
 
+    <section id="llm-kernel-map" class="llm-kernel-map" aria-labelledby="llm-map-title">
+      <div class="llm-map-intro">
+        <span class="step-label">THE MODEL PATH</span>
+        <h2 id="llm-map-title">Inside one LLM token</h2>
+        <p>An LLM is not one giant CUDA kernel. It is a pipeline of tensor operations. These teaching kernels reveal the CUDA pattern underneath each part.</p>
+      </div>
+      <div class="token-flow" aria-label="LLM CUDA kernel pipeline">
+        <a class="llm-node embedding" href="../llm_examples/01_token_embedding.cu"><span>01</span><b>Token embedding</b><small>token ID → hidden vector</small><code>row lookup + 2D indexing</code></a>
+        <i>→</i>
+        <a class="llm-node projection" href="../llm_examples/07_linear_projection.cu"><span>02</span><b>Q / K / V + MLP</b><small>hidden vector → projected features</small><code>matrix multiplication</code></a>
+        <i>→</i>
+        <a class="llm-node attention" href="../llm_examples/06_attention_softmax.cu"><span>03</span><b>Attention softmax</b><small>scores → probabilities</small><code>max + sum reductions</code></a>
+        <i>→</i>
+        <a class="llm-node residual active" href="../llm_examples/02_residual_add.cu"><span>04 · LIVE ABOVE</span><b>Residual stream</b><small>layer output + previous hidden state</small><code>parallel vector add</code></a>
+        <i>→</i>
+        <a class="llm-node norm" href="../llm_examples/04_rmsnorm.cu"><span>05</span><b>RMSNorm</b><small>hidden vector → normalized vector</small><code>shared-memory reduction</code></a>
+        <i>→</i>
+        <a class="llm-node logits" href="../llm_examples/07_linear_projection.cu"><span>06</span><b>Logits</b><small>hidden vector → vocabulary scores</small><code>LM-head projection</code></a>
+      </div>
+      <div class="llm-patterns">
+        <article><b>Elementwise CUDA</b><p>Residual Add and SiLU give independent threads hidden dimensions to update.</p></article>
+        <article><b>Reduction CUDA</b><p>RMSNorm and softmax make threads cooperate to compute statistics.</p></article>
+        <article><b>Matrix CUDA</b><p>Q/K/V, MLP, and LM-head projections are dominated by matrix multiplication.</p></article>
+      </div>
+      <p class="production-note"><strong>Teaching view:</strong> production LLM engines commonly fuse operations and use cuBLAS, CUTLASS, Tensor Cores, and FlashAttention-style kernels.</p>
+    </section>
+
     <details class="details-panel launch-details">
       <summary>Try changing the launch</summary>
       <section class="controls" aria-labelledby="controls-title">
         <div><span class="step-label">EXPERIMENT</span><h2 id="controls-title">Change one number</h2></div>
-        <label>Example<select id="example"><option value="indexing">Global indexing</option><option value="bounds" selected>Bounds check</option><option value="vector-add">Vector addition</option><option value="grid-stride">Grid-stride loop</option></select></label>
+        <label>Example<select id="example"><option value="residual-add" selected>LLM · Residual stream</option><option value="vector-add">Foundation · Vector addition</option><option value="indexing">Foundation · Global indexing</option><option value="bounds">Foundation · Bounds check</option><option value="grid-stride">LLM · Activation loop</option></select></label>
         <label>Blocks <output id="blocks-value">2</output><input id="blocks" type="range" min="1" max="8" value="2"></label>
         <label>Threads / block <output id="threads-value">4</output><input id="threads" type="range" min="1" max="16" value="4"></label>
         <label>Array length <output id="data-value">6</output><input id="data-size" type="range" min="1" max="48" value="6"></label>

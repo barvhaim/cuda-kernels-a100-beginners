@@ -15,6 +15,14 @@ const EXAMPLES = {
       "if (i < n) { work(data[i]); }",
     ],
   },
+  "residual-add": {
+    name: "LLM residual add",
+    lesson: "llm_examples/02_residual_add.cu",
+    code: [
+      "const int i = blockIdx.x * blockDim.x + threadIdx.x;",
+      "if (i < n) hidden_out[i] = layer_output[i] + residual[i];",
+    ],
+  },
   "vector-add": {
     name: "Vector addition",
     lesson: "lessons/06_vector_add.cu",
@@ -39,7 +47,7 @@ const clampInteger = (value, min, max) =>
 
 export function normalizeConfig(config = {}) {
   return {
-    example: EXAMPLES[config.example] ? config.example : "bounds",
+    example: EXAMPLES[config.example] ? config.example : "residual-add",
     blocks: clampInteger(config.blocks, 1, 8),
     threadsPerBlock: clampInteger(config.threadsPerBlock, 1, 16),
     dataSize: clampInteger(config.dataSize, 1, 48),
@@ -67,7 +75,7 @@ export function createSimulation(config = {}) {
     }
 
     for (const index of indices) {
-      if (example === "vector-add") output[index] = inputA[index] + inputB[index];
+      if (example === "vector-add" || example === "residual-add") output[index] = inputA[index] + inputB[index];
       if (example === "grid-stride") output[index] = inputA[index] * 2;
       if (example === "bounds") output[index] = inputA[index];
       if (example === "indexing") output[index] = globalIdx;

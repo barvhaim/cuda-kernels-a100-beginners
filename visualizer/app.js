@@ -23,7 +23,7 @@ let isPlaying = false;
 
 function loadUrlState() {
   const params = new URLSearchParams(window.location.search);
-  if (["indexing", "bounds", "vector-add", "grid-stride"].includes(params.get("example"))) controls.example.value = params.get("example");
+  if (["indexing", "bounds", "vector-add", "grid-stride", "residual-add"].includes(params.get("example"))) controls.example.value = params.get("example");
   if (params.has("blocks")) controls.blocks.value = params.get("blocks");
   if (params.has("threads")) controls.threadsPerBlock.value = params.get("threads");
   if (params.has("n")) controls.dataSize.value = params.get("n");
@@ -60,6 +60,7 @@ function inlineCodeLines() {
   const work = {
     indexing: 'printf("global=%d\\n", i);',
     bounds: "data[i] = data[i];",
+    "residual-add": "hidden_out[i] = layer_output[i] + residual[i];",
     "vector-add": "c[i] = a[i] + b[i];",
     "grid-stride": "output[i] = input[i] * 2;",
   }[simulation.example];
@@ -155,15 +156,20 @@ function renderFormula() {
 
 function renderMapping() {
   const selected = selectedThread();
-  $("#launch-summary").textContent = `${simulation.blocks} blocks × ${simulation.threadsPerBlock} threads = ${simulation.launchedThreads} threads for ${simulation.dataSize} items`;
-  $("#launch-consequence").textContent = simulation.extraThreads
-    ? `${simulation.extraThreads} extra thread${simulation.extraThreads === 1 ? "" : "s"} fall outside the array and do no work.`
-    : "Every launched thread maps to data in this example.";
+  $("#launch-summary").textContent = simulation.example === "residual-add"
+    ? `Residual stream: ${simulation.launchedThreads} CUDA threads update ${simulation.dataSize} hidden dimensions`
+    : `${simulation.blocks} blocks × ${simulation.threadsPerBlock} threads = ${simulation.launchedThreads} threads for ${simulation.dataSize} items`;
+  $("#launch-consequence").textContent = simulation.example === "residual-add"
+    ? `${Math.min(simulation.launchedThreads, simulation.dataSize)} threads add layer output back into the token state; ${simulation.extraThreads} extra thread${simulation.extraThreads === 1 ? "" : "s"} stop safely.`
+    : simulation.extraThreads
+      ? `${simulation.extraThreads} extra thread${simulation.extraThreads === 1 ? "" : "s"} fall outside the array and do no work.`
+      : "Every launched thread maps to data in this example.";
 
   $("#mapping-view").innerHTML = Array.from({ length: simulation.blocks }, (_, blockIdx) => {
     const threads = simulation.threads.filter((thread) => thread.blockIdx === blockIdx);
     return `<article class="mapping-block"><header>BLOCK ${blockIdx}<small>blockDim.x = ${simulation.threadsPerBlock}</small></header><div class="mapping-threads">${threads.map((thread) => {
-      const target = thread.indices.length ? thread.indices.map((index) => `A[${index}]`).join(", ") : "outside array";
+      const targetLabel = simulation.example === "residual-add" ? "hidden" : "A";
+      const target = thread.indices.length ? thread.indices.map((index) => `${targetLabel}[${index}]`).join(", ") : "outside array";
       const isSelected = thread.globalIdx === selected.globalIdx;
       const frameState = step === 0 ? "spawned" : step === 1 ? "indexed" : step === 2 ? (thread.active ? "accepted" : "rejected") : (thread.active ? "committed" : "rejected");
       return `<button class="mapping-lane ${thread.active ? "active" : "extra"} ${isSelected ? "selected" : ""} ${frameState}" data-thread="${thread.globalIdx}">
@@ -185,7 +191,8 @@ function renderExecutionMap() {
   const state = stageState(simulation, step);
   const thread = selectedThread();
   const targets = thread.indices.length ? thread.indices.map((index) => `item ${index}`).join(", ") : "no item: outside data";
-  const inputs = simulation.example === "vector-add" ? "A  B" : "A";
+  const isPairInput = simulation.example === "vector-add" || simulation.example === "residual-add";
+  const inputs = simulation.example === "residual-add" ? "layer output  +  residual" : isPairInput ? "A  B" : "A";
 
   $("#machine-map").innerHTML = `
     <div class="scene-node ${step === 0 ? "focus" : ""}"><span class="icon cpu">CPU</span><b>Host memory</b><small>${inputs}</small></div>
@@ -213,14 +220,21 @@ function cells(values, visible, result = false) {
 function renderMemory() {
   const state = stageState(simulation, step);
   const rows = [];
-  rows.push(`<div class="memory-row"><b>CPU input A</b>${cells(simulation.inputA, true)}</div>`);
-  if (simulation.example === "vector-add") rows.push(`<div class="memory-row"><b>CPU input B</b>${cells(simulation.inputB, true)}</div>`);
+  const residual = simulation.example === "residual-add";
+  const paired = simulation.example === "vector-add" || residual;
+  const inputALabel = residual ? "Layer output" : "CPU input A";
+  const inputBLabel = residual ? "Residual stream" : "CPU input B";
+  const gpuALabel = residual ? "GPU layer output" : "GPU input A";
+  const gpuBLabel = residual ? "GPU residual stream" : "GPU input B";
+  const outputLabel = residual ? "GPU updated hidden state" : "GPU output C";
+  rows.push(`<div class="memory-row"><b>${inputALabel}</b>${cells(simulation.inputA, true)}</div>`);
+  if (paired) rows.push(`<div class="memory-row"><b>${inputBLabel}</b>${cells(simulation.inputB, true)}</div>`);
   if (state.deviceReady) {
     rows.push(`<div class="memory-divider">copied to GPU ↓</div>`);
-    rows.push(`<div class="memory-row device-row"><b>GPU input A</b>${cells(simulation.inputA, true)}</div>`);
-    if (simulation.example === "vector-add") rows.push(`<div class="memory-row device-row"><b>GPU input B</b>${cells(simulation.inputB, true)}</div>`);
+    rows.push(`<div class="memory-row device-row"><b>${gpuALabel}</b>${cells(simulation.inputA, true)}</div>`);
+    if (paired) rows.push(`<div class="memory-row device-row"><b>${gpuBLabel}</b>${cells(simulation.inputB, true)}</div>`);
   }
-  if (state.executed) rows.push(`<div class="memory-row output-row"><b>GPU output C</b>${cells(simulation.output, true, true)}</div>`);
+  if (state.executed) rows.push(`<div class="memory-row output-row"><b>${outputLabel}</b>${cells(simulation.output, true, true)}</div>`);
   if (state.resultOnHost) rows.push(`<div class="memory-row result-row"><b>CPU result</b>${cells(simulation.output, true, true)}</div>`);
   $("#memory-view").innerHTML = rows.join("");
 }
