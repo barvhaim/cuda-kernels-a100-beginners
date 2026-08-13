@@ -99,8 +99,11 @@ function renderMemory() {
   if (simulation.example === "vector-add") {
     rows.push(`<div class="memory-row"><div class="memory-label">HOST · input B</div>${cells(simulation.inputB, state.hostReady)}</div>`);
   }
-  rows.push(`<div class="memory-row"><div class="memory-label">DEVICE · input</div>${cells(simulation.inputA, state.deviceReady)}</div>`);
-  rows.push(`<div class="memory-row"><div class="memory-label">DEVICE · output</div>${cells(simulation.output, state.executed, true)}</div>`);
+  rows.push(`<div class="memory-row"><div class="memory-label">DEVICE · input A</div>${cells(simulation.inputA, state.deviceReady)}</div>`);
+  if (simulation.example === "vector-add") {
+    rows.push(`<div class="memory-row"><div class="memory-label">DEVICE · input B</div>${cells(simulation.inputB, state.deviceReady)}</div>`);
+  }
+  rows.push(`<div class="memory-row"><div class="memory-label">DEVICE · output C</div>${cells(simulation.output, state.executed, true)}</div>`);
   rows.push(`<div class="memory-row"><div class="memory-label">HOST · result</div>${cells(simulation.output, state.resultOnHost, true)}</div>`);
   $("#memory-view").innerHTML = rows.join("");
 }
